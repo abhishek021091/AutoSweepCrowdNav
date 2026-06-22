@@ -204,12 +204,11 @@ class CrowdSim(gym.Env):
         while len(self.humans) < human_num:
             logging.info('Generating human {}/{}'.format(len(self.humans)+1, human_num))
             #import pdb; pdb.set_trace()
-            ret = self.generate_circle_crossing_human()
-            if type(ret) == list:
-                for h in ret:
-                    self.humans.append(h)
+            spawned_entity = self.generate_circle_crossing_human()
+            if isinstance(spawned_entity, list):
+                self.humans.extend(spawned_entity)
             else:
-                self.humans.append(ret)
+                self.humans.append(spawned_entity)
 
     def generate_circle_crossing_human(self):
         """Generate a human: generate start position on a circle, goal position is at the opposite side"""
