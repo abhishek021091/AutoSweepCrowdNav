@@ -1,3 +1,5 @@
+import logging
+
 import gym
 import numpy as np
 
@@ -220,7 +222,11 @@ class CrowdSimPredRealGST(CrowdSimPred):
                 i].py <= actual_arena_size:
                 # label numbers on each human
                 # plt.text(self.humans[i].px - 0.1, self.humans[i].py - 0.1, str(self.humans[i].id), color='black', fontsize=12)
-                plt.text(self.humans[i].px , self.humans[i].py , i, color='black', fontsize=12)
+                if (self.humans[i].group_size>1):
+                    text_obj = plt.text(self.humans[i].px - 0.1, self.humans[i].py - 0.1, str(i) + 'g', color='black', fontsize=12)
+                else:
+                    text_obj = plt.text(self.humans[i].px - 0.1, self.humans[i].py - 0.1, str(i), color='black', fontsize=12)
+                artists.append(text_obj)
 
         # plot predicted human positions
         for i in range(len(self.humans)):

@@ -1,0 +1,36 @@
+name: crowdnav
+
+channels:
+  - pytorch
+  - conda-forge
+  - defaults
+
+dependencies:
+  - python=3.10
+  - pip
+  - setuptools=65.5.0
+  - cmake<4
+  - swig
+  - cython
+
+  # Prevent NumPy 2.x incompatibility
+  - numpy=1.23.5
+
+  # PyTorch 1.12.1
+  - pytorch=1.12.1
+  - torchvision=0.13.1
+  - torchaudio=0.12.1
+
+  - pip:
+      # Project requirements
+      - -r requirements.txt
+
+      # RL stack
+      - gym==0.15.7
+      - tensorflow-gpu==2.11.0
+
+      # OpenAI Baselines
+      #- git+https://github.com/openai/baselines.git
+
+      # Python-RVO2
+      #- git+https://github.com/sybrenstuvel/Python-RVO2.git

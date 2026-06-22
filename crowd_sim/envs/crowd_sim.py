@@ -15,7 +15,7 @@ from crowd_sim.envs.utils.action import ActionRot, ActionXY
 from crowd_sim.envs.utils.recorder import Recoder
 
 
-
+print("******** MY CROWDSIM FILE LOADED ********")
 class CrowdSim(gym.Env):
     """
     A base environment
@@ -32,6 +32,7 @@ class CrowdSim(gym.Env):
         self.time_step = None
         self.robot = None # a Robot instance representing the robot
         self.humans = None # a list of Human instances, representing all humans in the environment
+        self.group = None
         self.global_time = None
         self.step_counter=0
 
@@ -105,6 +106,9 @@ class CrowdSim(gym.Env):
                           'test': self.config.env.test_size}
         self.circle_radius = config.sim.circle_radius
         self.human_num = config.sim.human_num
+        self.start_at_boundary = config.sim.start_at_boundary
+        self.group = config.sim.group
+        self.group_size = config.sim.group_size
 
         self.arena_size = config.sim.arena_size
 
@@ -190,18 +194,26 @@ class CrowdSim(gym.Env):
 
 
     def generate_random_human_position(self, human_num):
+        logging.info('Generating {} humans with random positions and goals on a circle'.format(human_num))
         """
         Calls generate_circle_crossing_human function to generate a certain number of random humans
         :param human_num: the total number of humans to be generated
         :return: None
         """
         # initial min separation distance to avoid danger penalty at beginning
-        for i in range(human_num):
-            self.humans.append(self.generate_circle_crossing_human())
-
+        while len(self.humans) < human_num:
+            logging.info('Generating human {}/{}'.format(len(self.humans)+1, human_num))
+            #import pdb; pdb.set_trace()
+            ret = self.generate_circle_crossing_human()
+            if type(ret) == list:
+                for h in ret:
+                    self.humans.append(h)
+            else:
+                self.humans.append(ret)
 
     def generate_circle_crossing_human(self):
         """Generate a human: generate start position on a circle, goal position is at the opposite side"""
+        logging.info('Generating a human with random position and goal on a circle')
         human = Human(self.config, 'humans')
         if self.randomize_attributes:
             human.sample_random_attributes()
@@ -309,6 +321,7 @@ class CrowdSim(gym.Env):
 
         # generate humans
         self.generate_random_human_position(human_num=human_num)
+        logging.info("Generated Humans")
 
 
 
@@ -860,14 +873,19 @@ class CrowdSim(gym.Env):
 
             # label numbers on each human
             # plt.text(self.humans[i].px - 0.1, self.humans[i].py - 0.1, str(self.humans[i].id), color='black', fontsize=12)
-            plt.text(self.humans[i].px - 0.1, self.humans[i].py - 0.1, i, color='black', fontsize=12)
+            
+            if (self.humans[i].group_size>1):
+                logging.info(f"Human {i} has group_size={self.humans[i].group_size} - printing 'g'")
+                text_obj = plt.text(self.humans[i].px - 0.1, self.humans[i].py - 0.1, str(i) + 'g', color='black', fontsize=12)
+            else:
+                logging.info("Printing human id: {} at position ({}, {}), group_size={}".format(i, self.humans[i].px, self.humans[i].py, self.humans[i].group_size))
+                text_obj = plt.text(self.humans[i].px - 0.1, self.humans[i].py - 0.1, str(i), color='black', fontsize=12)
+            artists.append(text_obj)
+
 
 
 
         plt.pause(0.1)
         for item in artists:
-            item.remove() # there should be a better way to do this. For example,
-            # initially use add_artist and draw_artist later on
-        for t in ax.texts:
-            t.set_visible(False)
+            item.remove()
 

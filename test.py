@@ -12,7 +12,6 @@ from rl.networks.model import Policy
 
 from crowd_sim import *
 
-
 def main():
 	"""
 	The main function for testing a trained model
@@ -53,7 +52,7 @@ def main():
 
 	# import config class from saved directory
 	# if not found, import from the default directory
-
+	'''
 	try:
 		model_dir_string = model_dir_temp.replace('/', '.') + '.configs.config'
 		model_arguments = import_module(model_dir_string)
@@ -61,7 +60,9 @@ def main():
 
 	except:
 		print('Failed to get Config function from ', test_args.model_dir)
-		from crowd_nav.configs.config import Config
+	'''
+
+	from crowd_nav.configs.config import Config
 	env_config = config = Config()
 
 
@@ -106,6 +107,7 @@ def main():
 
 	# set up visualization
 	if test_args.visualize:
+		#import pdb; pdb.set_trace()
 		fig, ax = plt.subplots(figsize=(7, 7))
 		ax.set_xlim(-6.5, 6.5) # 6
 		ax.set_ylim(-6.5, 6.5)

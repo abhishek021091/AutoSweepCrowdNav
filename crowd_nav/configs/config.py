@@ -39,7 +39,10 @@ class Config(object):
     sim = BaseConfig()
     sim.circle_radius = 6 * np.sqrt(2)
     sim.arena_size = 6
-    sim.human_num = 20
+    sim.start_at_boundary = True
+    sim.group = True
+    sim.group_size = 2
+    sim.human_num = 3
     # actual human num in each timestep, in [human_num-human_num_range, human_num+human_num_range]
     sim.human_num_range = 0
     sim.predict_steps = 5
@@ -76,11 +79,11 @@ class Config(object):
 
     # a human may change its goal before it reaches its old goal
     # if randomize human behaviors, set to True, else set to False
-    humans.random_goal_changing = True
+    humans.random_goal_changing = False
     humans.goal_change_chance = 0.5
 
     # a human may change its goal after it reaches its old goal
-    humans.end_goal_changing = True
+    humans.end_goal_changing = False
     humans.end_goal_change_chance = 1.0
 
     # a human may change its radius and/or v_pref after it reaches its current goal

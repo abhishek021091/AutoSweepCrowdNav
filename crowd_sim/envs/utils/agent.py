@@ -5,6 +5,7 @@ import logging
 from crowd_nav.policy.policy_factory import policy_factory
 from crowd_sim.envs.utils.action import ActionXY, ActionRot
 from crowd_sim.envs.utils.state import ObservableState, FullState
+from trained_models.GST_predictor_non_rand.configs import config
 
 
 class Agent(object):
@@ -49,7 +50,7 @@ class Agent(object):
         self.v_pref = np.random.uniform(0.5, 1.5)
         self.radius = np.random.uniform(0.3, 0.5)
 
-    def set(self, px, py, gx, gy, vx, vy, theta, radius=None, v_pref=None):
+    def set(self, px, py, gx, gy, vx, vy, theta, radius=None, v_pref=None, group_size=1):
         self.px = px
         self.py = py
         self.gx = gx
@@ -57,12 +58,14 @@ class Agent(object):
         self.vx = vx
         self.vy = vy
         self.theta = theta
+        self.group_size = group_size
 
         if radius is not None:
             self.radius = radius
         if v_pref is not None:
             self.v_pref = v_pref
-
+        logging.info('Agent is set to position ({}, {}), goal ({}, {}), velocity ({}, {}), theta {}, radius {}, v_pref {}, group_size {}'.format(
+            self.px, self.py, self.gx, self.gy, self.vx, self.vy, self.theta, self.radius, self.v_pref, self.group_size))
     # self.px, self.py, self.vx, self.vy, self.radius, self.gx, self.gy, self.v_pref, self.theta
     def set_list(self, px, py, vx, vy, radius, gx, gy, v_pref, theta):
         self.px = px

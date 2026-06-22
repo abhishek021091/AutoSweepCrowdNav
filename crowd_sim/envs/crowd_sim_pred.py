@@ -1,3 +1,5 @@
+import logging
+
 import gym
 import numpy as np
 from numpy.linalg import norm
@@ -352,7 +354,13 @@ class CrowdSimPred(CrowdSimVarNum):
                 i].py <= actual_arena_size:
                 # label numbers on each human
                 # plt.text(self.humans[i].px - 0.1, self.humans[i].py - 0.1, str(self.humans[i].id), color='black', fontsize=12)
-                plt.text(self.humans[i].px - 0.1, self.humans[i].py - 0.1, i, color='black', fontsize=12)
+                if (self.humans[i].group_size>1):
+                    text_obj = plt.text(self.humans[i].px - 0.1, self.humans[i].py - 0.1, str(i) + 'g', color='black', fontsize=12)
+                else:
+                    logging.info("Printing human id: {} at position ({}, {})".format(i, self.humans[i].px, self.humans[i].py))
+                    text_obj = plt.text(self.humans[i].px - 0.1, self.humans[i].py - 0.1, str(i), color='black', fontsize=12)
+                artists.append(text_obj)
+
 
 
         # save plot for slide show
@@ -365,7 +373,4 @@ class CrowdSimPred(CrowdSimVarNum):
 
         plt.pause(0.1)
         for item in artists:
-            item.remove() # there should be a better way to do this. For example,
-            # initially use add_artist and draw_artist later on
-        for t in ax.texts:
-            t.set_visible(False)
+            item.remove()

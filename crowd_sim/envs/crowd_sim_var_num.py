@@ -1,3 +1,6 @@
+import logging
+from random import choices
+
 import gym
 import numpy as np
 from numpy.linalg import norm
@@ -114,18 +117,30 @@ class CrowdSimVarNum(CrowdSim):
 
     # generate a human that starts on a circle, and its goal is on the opposite side of the circle
     def generate_circle_crossing_human(self):
+        attempts = 0
         human = Human(self.config, 'humans')
         if self.randomize_attributes:
             human.sample_random_attributes()
 
         while True:
+            attempts += 1
+            if attempts > 10:
+                import pdb; pdb.set_trace()
+            print("attempt", attempts)
             angle = np.random.random() * np.pi * 2
-            # add some noise to simulate all the possible cases robot could meet with human
-            noise_range = 2
-            px_noise = np.random.uniform(0, 1) * noise_range
-            py_noise = np.random.uniform(0, 1) * noise_range
-            px = self.circle_radius * np.cos(angle) + px_noise
-            py = self.circle_radius * np.sin(angle) + py_noise
+            if self.start_at_boundary:
+                choices = [( self.circle_radius, 0),(-self.circle_radius, 0),(0,  self.circle_radius),(0, -self.circle_radius)]
+                gate_x, gate_y = choices[np.random.randint(len(choices))]
+                px = gate_x + np.random.choice([-0.5, 0.5])
+                py = gate_y + np.random.choice([-0.5, 0.5])
+                #logging.info('generate human at boundary with angle {}, px {}, py {}'.format(angle, px, py))
+            else:
+                # add some noise to simulate all the possible cases robot could meet with human
+                noise_range = 2
+                px_noise = np.random.uniform(0, 1) * noise_range
+                py_noise = np.random.uniform(0, 1) * noise_range
+                px = self.circle_radius * np.cos(angle) + px_noise
+                py = self.circle_radius * np.sin(angle) + py_noise
             collide = False
 
             for i, agent in enumerate([self.robot] + self.humans):
@@ -137,12 +152,29 @@ class CrowdSimVarNum(CrowdSim):
                 if norm((px - agent.px, py - agent.py)) < min_dist or \
                         norm((px - agent.gx, py - agent.gy)) < min_dist:
                     collide = True
+                    logging.info(f"candidate=({px},{py}) collide with agent {i} at ({agent.px},{agent.py}) or ({agent.gx},{agent.gy}), min_dist={min_dist}")
                     break
             if not collide:
                 break
-
-        human.set(px, py, -px, -py, 0, 0, 0)
-
+        #import pdb; pdb.set_trace()
+        should_group = np.random.randint(0,2)
+        if (len(self.humans)+ self.group_size <= self.max_human_num) and self.group and should_group:
+                group = []
+                human.set(px, py, -px, -py, 0, 0, 0, group_size=self.group_size)
+                group.append(human)
+                for k in range(self.group_size-1):
+                    human = Human(self.config, 'humans')
+                    #angle = np.random.random() * np.pi * 2
+                    noise_range = 0.5
+                    px_noise = np.random.uniform(0, 1) * noise_range
+                    py_noise = np.random.uniform(0, 1) * noise_range
+                    px_k = px + px_noise + human.radius
+                    py_k = py + py_noise + human.radius
+                    human.set(px_k, py_k, -px_k, -py_k, 0, 0, 0, group_size=self.group_size)
+                    group.append(human)
+                return group
+        else:
+            human.set(px, py, -px, -py, 0, 0, 0)
         return human
 
     # calculate the ground truth future trajectory of humans
@@ -676,7 +708,15 @@ class CrowdSimVarNum(CrowdSim):
             if self.humans[i].id in self.observed_human_ids:
                 human_circles[i].set_color(c='b')
 
-            plt.text(self.humans[i].px - 0.1, self.humans[i].py - 0.1, str(self.humans[i].id), color='black', fontsize=12)
+            if (self.humans[i].group_size>1):
+                logging.info(f"Human {i} has group_size={self.humans[i].group_size} - printing 'g'")
+                text_obj = plt.text(self.humans[i].px - 0.1, self.humans[i].py - 0.1, str(i) + 'g', color='black', fontsize=12)
+            else:
+                logging.info("Printing human id: {} at position ({}, {}), group_size={}".format(i, self.humans[i].px, self.humans[i].py, self.humans[i].group_size))
+                text_obj = plt.text(self.humans[i].px - 0.1, self.humans[i].py - 0.1, str(i), color='black', fontsize=12)
+            artists.append(text_obj)
+
+
 
 
 
@@ -684,8 +724,5 @@ class CrowdSimVarNum(CrowdSim):
 
         plt.pause(0.01)
         for item in artists:
-            item.remove() # there should be a better way to do this. For example,
-            # initially use add_artist and draw_artist later on
-        for t in ax.texts:
-            t.set_visible(False)
+            item.remove()
 
