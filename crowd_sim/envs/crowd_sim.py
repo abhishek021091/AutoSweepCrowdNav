@@ -30,8 +30,11 @@ class CrowdSim(gym.Env):
         """
         self.time_limit = None
         self.time_step = None
+        self.empty_arena = None # if True, no humans will be generated in the arena
         self.robot = None # a Robot instance representing the robot
-        self.humans = None # a list of Human instances, representing all humans in the environment
+        self.robot_radius = None
+        self.humans = None
+        self.human_radius = None # a list of Human instances, representing all humans in the environment
         self.group = None
         self.global_time = None
         self.step_counter=0
@@ -105,7 +108,10 @@ class CrowdSim(gym.Env):
         self.case_size = {'train': np.iinfo(np.uint32).max - 2000, 'val': self.config.env.val_size,
                           'test': self.config.env.test_size}
         self.circle_radius = config.sim.circle_radius
+        self.empty_arena = config.sim.empty_arena
         self.human_num = config.sim.human_num
+        self.robot_radius = config.robot.radius
+        self.human_radius = config.humans.radius
         self.start_at_boundary = config.sim.start_at_boundary
         self.group = config.sim.group
         self.group_size = config.sim.group_size
@@ -131,13 +137,20 @@ class CrowdSim(gym.Env):
 
         # set dummy human and dummy robot
         # dummy humans, used if any human is not in view of other agents
+        self.distance_outside_FOV = self.arena_size + self.robot_radius + self.human_radius + 1
         self.dummy_human = Human(self.config, 'humans')
         # if a human is not in view, set its state to (px = 100, py = 100, vx = 0, vy = 0, theta = 0, radius = 0)
-        self.dummy_human.set(7, 7, 7, 7, 0, 0, 0) # (7, 7, 7, 7, 0, 0, 0)
+        self.dummy_human.set(self.distance_outside_FOV,
+                             self.distance_outside_FOV,
+                             self.distance_outside_FOV,
+                             self.distance_outside_FOV, 0, 0, 0)
         self.dummy_human.time_step = config.env.time_step
 
         self.dummy_robot = Robot(self.config, 'robot')
-        self.dummy_robot.set(7, 7, 7, 7, 0, 0, 0)
+        self.dummy_robot.set(self.distance_outside_FOV,
+                             self.distance_outside_FOV,
+                             self.distance_outside_FOV,
+                             self.distance_outside_FOV, 0, 0, 0)
         self.dummy_robot.time_step = config.env.time_step
         self.dummy_robot.kinematics = 'holonomic'
         self.dummy_robot.policy = ORCA(config)
@@ -159,8 +172,21 @@ class CrowdSim(gym.Env):
 
         self.predict_steps = config.sim.predict_steps
         self.human_num_range = config.sim.human_num_range
+        # The SRNN/attention network assumes at least one human slot exists.
+        # Using human_num = 0 causes tensor dimensions and attention masks to become empty,
+        # leading to crashes (e.g. dummy_human_mask[0] access).
+        #
+        # For an empty arena, we keep exactly one "dummy" human located outside the
+        # environment. This preserves the expected observation and tensor shapes while
+        # behaving as if no humans are present from the robot's perspective.
+        #
+        # In short:
+        #   Real humans in arena = 0
+        #   Human slots in network = 1 (dummy human)
+        if self.empty_arena:
+            self.human_num = 1
+            self.human_num_range = 0
         assert self.human_num > self.human_num_range
-
         self.max_human_num = self.human_num + self.human_num_range
         self.min_human_num = self.human_num - self.human_num_range
 
@@ -194,7 +220,6 @@ class CrowdSim(gym.Env):
 
 
     def generate_random_human_position(self, human_num):
-        logging.info('Generating {} humans with random positions and goals on a circle'.format(human_num))
         """
         Calls generate_circle_crossing_human function to generate a certain number of random humans
         :param human_num: the total number of humans to be generated
@@ -202,13 +227,18 @@ class CrowdSim(gym.Env):
         """
         # initial min separation distance to avoid danger penalty at beginning
         while len(self.humans) < human_num:
-            logging.info('Generating human {}/{}'.format(len(self.humans)+1, human_num))
             #import pdb; pdb.set_trace()
-            spawned_entity = self.generate_circle_crossing_human()
-            if isinstance(spawned_entity, list):
-                self.humans.extend(spawned_entity)
+            if self.empty_arena:
+                if self.empty_arena:
+                    self.humans = [self.dummy_human]
+                return
             else:
-                self.humans.append(spawned_entity)
+                logging.info('Generating human {}/{}'.format(len(self.humans)+1, human_num))
+                spawned_entity = self.generate_circle_crossing_human()
+                if isinstance(spawned_entity, list):
+                    self.humans.extend(spawned_entity)
+                else:
+                    self.humans.append(spawned_entity)
 
     def generate_circle_crossing_human(self):
         """Generate a human: generate start position on a circle, goal position is at the opposite side"""

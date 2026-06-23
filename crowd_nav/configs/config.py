@@ -40,9 +40,10 @@ class Config(object):
     sim.circle_radius = 6 * np.sqrt(2)
     sim.arena_size = 6
     sim.start_at_boundary = True
+    sim.empty_arena = True
     sim.group = True
     sim.group_size = 2
-    sim.human_num = 3
+    sim.human_num = 1
     # actual human num in each timestep, in [human_num-human_num_range, human_num+human_num_range]
     sim.human_num_range = 0
     sim.predict_steps = 5
