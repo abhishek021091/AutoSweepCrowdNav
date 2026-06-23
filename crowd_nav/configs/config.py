@@ -37,8 +37,12 @@ class Config(object):
 
     # config for simulation
     sim = BaseConfig()
-    sim.circle_radius = 6 * np.sqrt(2)
-    sim.arena_size = 6
+    sim.arena_width = 10
+    sim.arena_height = 8
+    #sim.circle_radius = 6 * np.sqrt(2)
+    sim.ellipse_a = sim.arena_width * np.sqrt(2)
+    sim.ellipse_b = sim.arena_height * np.sqrt(2)
+    #sim.arena_size = 6
     sim.start_at_boundary = True
     sim.empty_arena = True
     sim.group = True
@@ -103,6 +107,11 @@ class Config(object):
     robot.visible = False
     # For baseline: srnn; our method: selfAttn_merge_srnn
     robot.policy = 'selfAttn_merge_srnn'
+    robot.sweep = False
+    robot.sweep_stop = None
+    robot.sweep_start = None
+    robot.sweep_step = None
+    robot.sweep_direction = 0   # 0 for x-axis, 1 for y-axis
     robot.radius = 0.3
     robot.v_pref = 1
     robot.sensor = "coordinates"

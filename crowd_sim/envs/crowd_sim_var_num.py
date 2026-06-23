@@ -81,12 +81,30 @@ class CrowdSimVarNum(CrowdSim):
             if self.robot.kinematics == 'unicycle':
                 # generate robot
                 angle = np.random.uniform(0, np.pi * 2)
-                px = self.arena_size * np.cos(angle)
-                py = self.arena_size * np.sin(angle)
-                while True:
-                    gx, gy = np.random.uniform(-self.arena_size, self.arena_size, 2)
-                    if np.linalg.norm([px - gx, py - gy]) >= 4:  # 1 was 6
-                        break
+                px = self.arena_width * np.cos(angle)
+                py = self.arena_height * np.sin(angle)
+                if self.robot_sweep:
+                    margin = self.robot.radius + 0.2
+                    gx = np.sign(px) * (self.arena_width - margin)
+                    gy = np.sign(py) * (self.arena_height - margin)
+                    self.robot.sweep_start = [gx, gy]
+                    if self.robot_sweep_direction == 0:
+                        total_steps_required = (self.arena_width*2)/(self.robot_radius*2)
+                        if total_steps_required % 2 == 0:
+                            self.robot.sweep_stop = [gx, -gy]
+                        else:
+                            self.robot.sweep_stop = [-gx, -gy]
+                    else:
+                        total_steps_required = (self.arena_height*2)/(self.robot_radius*2)
+                        if total_steps_required % 2 == 0:
+                            self.robot.sweep_stop = [-gx, gy]
+                        else:
+                            self.robot.sweep_stop = [-gx, -gy]
+                else:
+                    while True:
+                        gx, gy = np.random.uniform(-self.arena_width, self.arena_width, 2)
+                        if np.linalg.norm([px - gx, py - gy]) >= 4:  # 1 was 6
+                            break
                 self.robot.set(px, py, gx, gy, 0, 0, np.random.uniform(0, 2 * np.pi))  # randomize init orientation
                 # 1 to 4 humans
                 self.human_num = np.random.randint(1, self.config.sim.human_num + self.human_num_range + 1)
@@ -98,7 +116,7 @@ class CrowdSimVarNum(CrowdSim):
             else:
                 # generate robot
                 while True:
-                    px, py, gx, gy = np.random.uniform(-self.arena_size, self.arena_size, 4)
+                    px, py, gx, gy = np.random.uniform(-self.arena_width, self.arena_width, 4)
                     if np.linalg.norm([px - gx, py - gy]) >= 8: # 6
                         break
                 self.robot.set(px, py, gx, gy, 0, 0, np.pi / 2)
@@ -115,8 +133,8 @@ class CrowdSimVarNum(CrowdSim):
 
 
 
-    # generate a human that starts on a circle, and its goal is on the opposite side of the circle
-    def generate_circle_crossing_human(self):
+    # generate a human that starts on an ellipse, and its goal is on the opposite side of the ellipse
+    def generate_ellipse_crossing_human(self):
         attempts = 0
         human = Human(self.config, 'humans')
         if self.randomize_attributes:
@@ -129,7 +147,7 @@ class CrowdSimVarNum(CrowdSim):
             print("attempt", attempts)
             angle = np.random.random() * np.pi * 2
             if self.start_at_boundary:
-                choices = [( self.circle_radius, 0),(-self.circle_radius, 0),(0,  self.circle_radius),(0, -self.circle_radius)]
+                choices = [( self.ellipse_a, 0),(-self.ellipse_a, 0),(0,  self.ellipse_b),(0, -self.ellipse_b)]
                 gate_x, gate_y = choices[np.random.randint(len(choices))]
                 px = gate_x + np.random.choice([-0.5, 0.5])
                 py = gate_y + np.random.choice([-0.5, 0.5])
@@ -139,14 +157,14 @@ class CrowdSimVarNum(CrowdSim):
                 noise_range = 2
                 px_noise = np.random.uniform(0, 1) * noise_range
                 py_noise = np.random.uniform(0, 1) * noise_range
-                px = self.circle_radius * np.cos(angle) + px_noise
-                py = self.circle_radius * np.sin(angle) + py_noise
+                px = self.ellipse_a * np.cos(angle) + px_noise
+                py = self.ellipse_b * np.sin(angle) + py_noise
             collide = False
 
             for i, agent in enumerate([self.robot] + self.humans):
                 # keep human at least 3 meters away from robot
                 if self.robot.kinematics == 'unicycle' and i == 0:
-                    min_dist = self.circle_radius / 2  # Todo: if circle_radius <= 4, it will get stuck here
+                    min_dist = self.ellipse_a / 2 if self.ellipse_a>self.ellipse_b else self.ellipse_b / 2 # Todo: if ellipse_a <= 4, it will get stuck here
                 else:
                     min_dist = human.radius + agent.radius + self.discomfort_dist
                 if norm((px - agent.px, py - agent.py)) < min_dist or \
@@ -314,14 +332,21 @@ class CrowdSimVarNum(CrowdSim):
 
     # Update the specified human's end goals in the environment randomly
     def update_human_pos_goal(self, human):
+        """
+        if agent == "Robot":
+            if self.robot_sweep:
+                margin = self.robot.radius + 0.2
+                if self.robot.px - self.robot.gx > 0:
+                    self.robot.gx = self.robot.gx
+        """
         while True:
             angle = np.random.random() * np.pi * 2
             # add some noise to simulate all the possible cases robot could meet with human
             v_pref = 1.0 if human.v_pref == 0 else human.v_pref
             gx_noise = (np.random.random() - 0.5) * v_pref
             gy_noise = (np.random.random() - 0.5) * v_pref
-            gx = self.circle_radius * np.cos(angle) + gx_noise
-            gy = self.circle_radius * np.sin(angle) + gy_noise
+            gx = self.ellipse_a * np.cos(angle) + gx_noise
+            gy = self.ellipse_b * np.sin(angle) + gy_noise
             collide = False
 
             if not collide:
@@ -484,7 +509,7 @@ class CrowdSimVarNum(CrowdSim):
             for i, human in enumerate(self.humans):
                 if norm((human.gx - human.px, human.gy - human.py)) < human.radius:
                     if self.robot.kinematics == 'holonomic':
-                        self.humans[i] = self.generate_circle_crossing_human()
+                        self.humans[i] = self.generate_ellipse_crossing_human()
                         self.humans[i].id = i
                     else:
                         self.update_human_goal(human)
@@ -694,7 +719,10 @@ class CrowdSimVarNum(CrowdSim):
         human_circles = [plt.Circle(human.get_position(), human.radius, fill=False, linewidth=1.5) for human in self.humans]
 
         # hardcoded for now
-        actual_arena_size = self.arena_size + 0.5
+        actual_arena_width = self.arena_width + 0.5
+        actual_arena_height = self.arena_height + 0.5
+        ax.set_xlim(-actual_arena_width, actual_arena_width)
+        ax.set_ylim(-actual_arena_height, actual_arena_height)
         for i in range(len(self.humans)):
             ax.add_artist(human_circles[i])
             artists.append(human_circles[i])

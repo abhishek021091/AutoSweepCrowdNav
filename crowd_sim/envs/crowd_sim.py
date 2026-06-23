@@ -51,7 +51,9 @@ class CrowdSim(gym.Env):
         self.case_counter = None
         self.randomize_attributes = None
 
-        self.circle_radius = None
+        #self.circle_radius = None
+        self.ellipse_a = None
+        self.ellipse_b = None
         self.human_num = None
 
 
@@ -64,6 +66,11 @@ class CrowdSim(gym.Env):
 
         self.dummy_human = None
         self.dummy_robot = None
+        self.robot_sweep = None
+        self.robot_sweep_stop = None
+        self.robot_sweep_start = None
+        self.robot_sweep_step = None
+        self.robot_sweep_direction = None
 
         #seed
         self.thisSeed=None # the seed will be set when the env is created
@@ -107,7 +114,9 @@ class CrowdSim(gym.Env):
         self.case_capacity = {'train': np.iinfo(np.uint32).max - 2000, 'val': 1000, 'test': 1000}
         self.case_size = {'train': np.iinfo(np.uint32).max - 2000, 'val': self.config.env.val_size,
                           'test': self.config.env.test_size}
-        self.circle_radius = config.sim.circle_radius
+        #self.circle_radius = config.sim.circle_radius
+        self.ellipse_a = config.sim.ellipse_a
+        self.ellipse_b = config.sim.ellipse_b
         self.empty_arena = config.sim.empty_arena
         self.human_num = config.sim.human_num
         self.robot_radius = config.robot.radius
@@ -115,8 +124,15 @@ class CrowdSim(gym.Env):
         self.start_at_boundary = config.sim.start_at_boundary
         self.group = config.sim.group
         self.group_size = config.sim.group_size
+        self.robot_sweep = config.robot.sweep
+        self.robot_sweep_stop = config.robot.sweep_stop
+        self.robot_sweep_start = config.robot.sweep_start
+        self.robot_sweep_step = config.robot.sweep_step
+        self.robot_sweep_direction = config.robot.sweep_direction
 
-        self.arena_size = config.sim.arena_size
+        #self.arena_size = config.sim.arena_size
+        self.arena_width = config.sim.arena_width
+        self.arena_height = config.sim.arena_height
 
         self.case_counter = {'train': 0, 'test': 0, 'val': 0}
 
@@ -126,7 +142,6 @@ class CrowdSim(gym.Env):
         else:
             logging.info("Not randomize human's radius and preferred speed")
 
-        logging.info('Circle width: {}'.format(self.circle_radius))
 
 
         self.robot_fov = np.pi * config.robot.FOV
@@ -137,7 +152,7 @@ class CrowdSim(gym.Env):
 
         # set dummy human and dummy robot
         # dummy humans, used if any human is not in view of other agents
-        self.distance_outside_FOV = self.arena_size + self.robot_radius + self.human_radius + 1
+        self.distance_outside_FOV = self.arena_width+self.arena_height + self.robot_radius + self.human_radius + 1
         self.dummy_human = Human(self.config, 'humans')
         # if a human is not in view, set its state to (px = 100, py = 100, vx = 0, vy = 0, theta = 0, radius = 0)
         self.dummy_human.set(self.distance_outside_FOV,
@@ -221,7 +236,7 @@ class CrowdSim(gym.Env):
 
     def generate_random_human_position(self, human_num):
         """
-        Calls generate_circle_crossing_human function to generate a certain number of random humans
+        Calls generate_ellipse_crossing_human function to generate a certain number of random humans
         :param human_num: the total number of humans to be generated
         :return: None
         """
@@ -234,15 +249,15 @@ class CrowdSim(gym.Env):
                 return
             else:
                 logging.info('Generating human {}/{}'.format(len(self.humans)+1, human_num))
-                spawned_entity = self.generate_circle_crossing_human()
+                spawned_entity = self.generate_ellipse_crossing_human()
                 if isinstance(spawned_entity, list):
                     self.humans.extend(spawned_entity)
                 else:
                     self.humans.append(spawned_entity)
 
-    def generate_circle_crossing_human(self):
-        """Generate a human: generate start position on a circle, goal position is at the opposite side"""
-        logging.info('Generating a human with random position and goal on a circle')
+    def generate_ellipse_crossing_human(self):
+        """Generate a human: generate start position on an ellipse, goal position is at the opposite side"""
+        logging.info('Generating a human with random position and goal on an ellipse')
         human = Human(self.config, 'humans')
         if self.randomize_attributes:
             human.sample_random_attributes()
@@ -253,14 +268,14 @@ class CrowdSim(gym.Env):
             v_pref = 1.0 if human.v_pref == 0 else human.v_pref
             px_noise = (np.random.random() - 0.5) * v_pref
             py_noise = (np.random.random() - 0.5) * v_pref
-            px = self.circle_radius * np.cos(angle) + px_noise
-            py = self.circle_radius * np.sin(angle) + py_noise
+            px = self.ellipse_a * np.cos(angle) + px_noise
+            py = self.ellipse_b * np.sin(angle) + py_noise
             collide = False
 
             for i, agent in enumerate([self.robot] + self.humans):
                 # keep human at least 3 meters away from robot
                 if self.robot.kinematics == 'unicycle' and i == 0:
-                    min_dist = self.circle_radius / 2 # Todo: if circle_radius <= 4, it will get stuck here
+                    min_dist = self.ellipse_a / 2 # Todo: if ellipse_a <= 4, it will get stuck here
                 else:
                     min_dist = human.radius + agent.radius + self.discomfort_dist
                 if norm((px - agent.px, py - agent.py)) < min_dist or \
@@ -331,10 +346,10 @@ class CrowdSim(gym.Env):
 
         if self.robot.kinematics == 'unicycle':
             angle = np.random.uniform(0, np.pi * 2)
-            px = self.circle_radius * np.cos(angle)
-            py = self.circle_radius * np.sin(angle)
+            px = self.ellipse_a * np.cos(angle)
+            py = self.ellipse_b * np.sin(angle)
             while True:
-                gx, gy = np.random.uniform(-self.circle_radius, self.circle_radius, 2)
+                gx, gy = np.random.uniform(-self.ellipse_a, self.ellipse_a, 2)
                 if np.linalg.norm([px - gx, py - gy]) >= 6:  # 1 was 6
                     break
             self.robot.set(px, py, gx, gy, 0, 0, np.random.uniform(0, 2*np.pi)) # randomize init orientation
@@ -342,7 +357,7 @@ class CrowdSim(gym.Env):
         # randomize starting position and goal position
         else:
             while True:
-                px, py, gx, gy = np.random.uniform(-self.circle_radius, self.circle_radius, 4)
+                px, py, gx, gy = np.random.uniform(-self.ellipse_a, self.ellipse_a, 4)
                 if np.linalg.norm([px - gx, py - gy]) >= 6:
                     break
             self.robot.set(px, py, gx, gy, 0, 0, np.pi/2)
@@ -466,15 +481,15 @@ class CrowdSim(gym.Env):
                         humans_copy.append(h)
 
 
-                # Produce valid goal for human in case of circle setting
+                # Produce valid goal for human in case of ellipse setting
                 while True:
                     angle = np.random.random() * np.pi * 2
                     # add some noise to simulate all the possible cases robot could meet with human
                     v_pref = 1.0 if human.v_pref == 0 else human.v_pref
                     gx_noise = (np.random.random() - 0.5) * v_pref
                     gy_noise = (np.random.random() - 0.5) * v_pref
-                    gx = self.circle_radius * np.cos(angle) + gx_noise
-                    gy = self.circle_radius * np.sin(angle) + gy_noise
+                    gx = self.ellipse_a * np.cos(angle) + gx_noise
+                    gy = self.ellipse_b * np.sin(angle) + gy_noise
                     collide = False
 
                     for agent in [self.robot] + humans_copy:
@@ -508,8 +523,8 @@ class CrowdSim(gym.Env):
                 v_pref = 1.0 if human.v_pref == 0 else human.v_pref
                 gx_noise = (np.random.random() - 0.5) * v_pref
                 gy_noise = (np.random.random() - 0.5) * v_pref
-                gx = self.circle_radius * np.cos(angle) + gx_noise
-                gy = self.circle_radius * np.sin(angle) + gy_noise
+                gx = self.ellipse_a * np.cos(angle) + gx_noise
+                gy = self.ellipse_b * np.sin(angle) + gy_noise
                 collide = False
 
                 for agent in [self.robot] + humans_copy:

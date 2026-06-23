@@ -108,9 +108,9 @@ def main():
 	# set up visualization
 	if test_args.visualize:
 		#import pdb; pdb.set_trace()
-		fig, ax = plt.subplots(figsize=(7, 7))
-		ax.set_xlim(-6.5, 6.5) # 6
-		ax.set_ylim(-6.5, 6.5)
+		fig, ax = plt.subplots(figsize=(11, 11))
+		ax.set_xlim(-10.5, 10.5) # 6
+		ax.set_ylim(-8.5, 8.5)
 		ax.axes.xaxis.set_visible(False)
 		ax.axes.yaxis.set_visible(False)
 		# ax.set_xlabel('x(m)', fontsize=16)

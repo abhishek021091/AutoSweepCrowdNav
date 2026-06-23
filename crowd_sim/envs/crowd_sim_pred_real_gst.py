@@ -205,7 +205,9 @@ class CrowdSimPredRealGST(CrowdSimPred):
         human_circles = [plt.Circle(human.get_position(), human.radius, fill=False, linewidth=1.5) for human in self.humans]
 
         # hardcoded for now
-        actual_arena_size = self.arena_size + 0.5
+        #actual_arena_size = self.arena_size + 0.5
+        actual_arena_width = self.arena_width + 0.5
+        actual_arena_height = self.arena_height + 0.5
 
         # plot the current human states
         for i in range(len(self.humans)):
@@ -218,8 +220,8 @@ class CrowdSimPredRealGST(CrowdSimPred):
             else:
                 human_circles[i].set_color(c='r')
 
-            if -actual_arena_size <= self.humans[i].px <= actual_arena_size and -actual_arena_size <= self.humans[
-                i].py <= actual_arena_size:
+            if -actual_arena_width <= self.humans[i].px <= actual_arena_width and -actual_arena_height <= self.humans[
+                i].py <= actual_arena_height:
                 # label numbers on each human
                 # plt.text(self.humans[i].px - 0.1, self.humans[i].py - 0.1, str(self.humans[i].id), color='black', fontsize=12)
                 if (self.humans[i].group_size>1):

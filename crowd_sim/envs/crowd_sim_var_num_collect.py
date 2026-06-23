@@ -178,7 +178,7 @@ class CrowdSimVarNumCollect(CrowdSimVarNum):
                 self.robot.gx, self.robot.gy = np.median(human_pos, axis=0)
             # random goal
             else:
-                self.robot.gx, self.robot.gy = np.random.uniform(-self.arena_size, self.arena_size, size=2)
+                self.robot.gx, self.robot.gy = np.random.uniform(-self.arena_width, self.arena_height, size=2)
 
         else:
             done = False
