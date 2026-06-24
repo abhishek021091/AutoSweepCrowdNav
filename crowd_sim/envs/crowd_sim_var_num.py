@@ -88,13 +88,15 @@ class CrowdSimVarNum(CrowdSim):
                     gx = np.sign(px) * (self.arena_width - margin)
                     gy = np.sign(py) * (self.arena_height - margin)
                     self.robot.sweep_start = [gx, gy]
-                    if self.robot_sweep_direction == 0:
+                    if self.robot_sweep_axes == 0:
+                        self.robot.sweep_dir = -1 if gx > 0 else 1
                         total_steps_required = (self.arena_width*2)/(self.robot_radius*2)
                         if total_steps_required % 2 == 0:
                             self.robot.sweep_stop = [gx, -gy]
                         else:
                             self.robot.sweep_stop = [-gx, -gy]
                     else:
+                        self.robot.sweep_dir = -1 if gy > 0 else 1
                         total_steps_required = (self.arena_height*2)/(self.robot_radius*2)
                         if total_steps_required % 2 == 0:
                             self.robot.sweep_stop = [-gx, gy]
@@ -107,7 +109,7 @@ class CrowdSimVarNum(CrowdSim):
                             break
                 self.robot.set(px, py, gx, gy, 0, 0, np.random.uniform(0, 2 * np.pi))  # randomize init orientation
                 # 1 to 4 humans
-                self.human_num = np.random.randint(1, self.config.sim.human_num + self.human_num_range + 1)
+                self.human_num = np.random.randint(1, self.human_num + self.human_num_range + 1)
                 # print('human_num:', self.human_num)
                 # self.human_num = 4
 
@@ -121,8 +123,8 @@ class CrowdSimVarNum(CrowdSim):
                         break
                 self.robot.set(px, py, gx, gy, 0, 0, np.pi / 2)
                 # generate humans
-                self.human_num = np.random.randint(low=self.config.sim.human_num - self.human_num_range,
-                                                   high=self.config.sim.human_num + self.human_num_range + 1)
+                self.human_num = np.random.randint(low=self.human_num - self.human_num_range,
+                                                   high=self.human_num + self.human_num_range + 1)
 
 
             self.generate_random_human_position(human_num=self.human_num)
@@ -141,10 +143,6 @@ class CrowdSimVarNum(CrowdSim):
             human.sample_random_attributes()
 
         while True:
-            attempts += 1
-            if attempts > 10:
-                import pdb; pdb.set_trace()
-            print("attempt", attempts)
             angle = np.random.random() * np.pi * 2
             if self.start_at_boundary:
                 choices = [( self.ellipse_a, 0),(-self.ellipse_a, 0),(0,  self.ellipse_b),(0, -self.ellipse_b)]
@@ -328,17 +326,50 @@ class CrowdSimVarNum(CrowdSim):
 
         return ob
 
-
+    def update_robot_pos_goal(self):
+        margin = self.robot.radius + 0.2
+        lane_step = self.robot.radius * 2
+        # Horizontal lawnmower sweep
+        if self.robot.sweep_axes == 0:
+            gx = self.robot.px + (self.robot.sweep_dir * self.robot_sweep_step)
+            gy = self.robot.py
+            # hit right wall
+            if gx > self.arena_width - margin:
+                gx = self.arena_width - margin
+                # move to next lane
+                gy += lane_step
+                # reverse direction
+                self.robot.sweep_dir = -1
+            # hit left wall
+            elif gx < -self.arena_width + margin:
+                gx = -self.arena_width + margin
+                # move to next lane
+                gy += lane_step
+                # reverse direction
+                self.robot.sweep_dir = 1
+        # Vertical lawnmower sweep
+        else:
+            gx = self.robot.px
+            gy = self.robot.py + self.robot.sweep_dir * self.robot_sweep_step
+            # hit top wall
+            if gy > self.arena_height - margin:
+                gy = self.arena_height - margin
+                # move to next lane
+                gx += lane_step
+                # reverse direction
+                self.robot.sweep_dir = -1
+            # hit bottom wall
+            elif gy < -self.arena_height + margin:
+                gy = -self.arena_height + margin
+                # move to next lane
+                gx += lane_step
+                # reverse direction
+                self.robot.sweep_dir = 1
+        self.robot.gx = gx
+        self.robot.gy = gy
 
     # Update the specified human's end goals in the environment randomly
-    def update_human_pos_goal(self, human):
-        """
-        if agent == "Robot":
-            if self.robot_sweep:
-                margin = self.robot.radius + 0.2
-                if self.robot.px - self.robot.gx > 0:
-                    self.robot.gx = self.robot.gx
-        """
+    def update_human_pos_goal(self, human): 
         while True:
             angle = np.random.random() * np.pi * 2
             # add some noise to simulate all the possible cases robot could meet with human
@@ -484,7 +515,7 @@ class CrowdSimVarNum(CrowdSim):
                     # set human ids
                     true_add_num = 0
                     for i in range(self.human_num, self.human_num + add_num):
-                        if i == self.config.sim.human_num + self.human_num_range:
+                        if i == self.human_num + self.human_num_range:
                             break
                         self.generate_random_human_position(human_num=1)
                         self.humans[i].id = i
@@ -546,9 +577,21 @@ class CrowdSimVarNum(CrowdSim):
             goal_radius = 0.6
         else:
             goal_radius = self.robot.radius
-        reaching_goal = norm(
-            np.array(self.robot.get_position()) - np.array(self.robot.get_goal_position())) < goal_radius
-
+            
+        dist_to_goal = norm(np.array(self.robot.get_position()) - np.array(self.robot.get_goal_position()))
+        reaching_goal = dist_to_goal < self.robot.radius
+        if self.step_counter % 20 == 0:
+            logging.info(
+                f"step={self.step_counter}, "
+                f"pos=({self.robot.px:.2f},{self.robot.py:.2f}), "
+                f"goal=({self.robot.gx:.2f},{self.robot.gy:.2f}), "
+                f"v=({self.robot.vx:.2f},{self.robot.vy:.2f}), "
+                f"dist={dist_to_goal:.2f}, "
+                f"action={action}, "
+                f"time_limit={self.time_limit}, "
+                f"time_step={self.time_step}, "
+                f"max_steps={self.time_limit/self.time_step:.0f}"
+            )
         # use danger_zone to determine the condition for Danger
         if danger_zone == 'circle' or self.phase == 'train':
             danger_cond = dmin < self.discomfort_dist
@@ -721,8 +764,8 @@ class CrowdSimVarNum(CrowdSim):
         # hardcoded for now
         actual_arena_width = self.arena_width + 0.5
         actual_arena_height = self.arena_height + 0.5
-        ax.set_xlim(-actual_arena_width, actual_arena_width)
-        ax.set_ylim(-actual_arena_height, actual_arena_height)
+        ax.set_xlim(-actual_arena_width+0.5, actual_arena_width-0.5)
+        ax.set_ylim(-actual_arena_height+0.5, actual_arena_height-0.5)
         for i in range(len(self.humans)):
             ax.add_artist(human_circles[i])
             artists.append(human_circles[i])

@@ -70,7 +70,8 @@ class CrowdSim(gym.Env):
         self.robot_sweep_stop = None
         self.robot_sweep_start = None
         self.robot_sweep_step = None
-        self.robot_sweep_direction = None
+        self.robot_sweep_axes = None
+        self.robot_sweep_dir = None
 
         #seed
         self.thisSeed=None # the seed will be set when the env is created
@@ -128,7 +129,8 @@ class CrowdSim(gym.Env):
         self.robot_sweep_stop = config.robot.sweep_stop
         self.robot_sweep_start = config.robot.sweep_start
         self.robot_sweep_step = config.robot.sweep_step
-        self.robot_sweep_direction = config.robot.sweep_direction
+        self.robot_sweep_axes = config.robot.sweep_axes
+        self.robot_sweep_dir = config.robot.sweep_dir
 
         #self.arena_size = config.sim.arena_size
         self.arena_width = config.sim.arena_width
@@ -665,7 +667,8 @@ class CrowdSim(gym.Env):
 
 
         # check if reaching the goal
-        reaching_goal = norm(np.array(self.robot.get_position()) - np.array(self.robot.get_goal_position())) < self.robot.radius
+        dist_to_goal = norm(np.array(self.robot.get_position()) - np.array(self.robot.get_goal_position()))
+        reaching_goal = dist_to_goal < self.robot.radius
 
         if self.global_time >= self.time_limit - 1:
             reward = 0

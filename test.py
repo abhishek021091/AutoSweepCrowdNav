@@ -108,11 +108,13 @@ def main():
 	# set up visualization
 	if test_args.visualize:
 		#import pdb; pdb.set_trace()
-		fig, ax = plt.subplots(figsize=(11, 11))
-		ax.set_xlim(-10.5, 10.5) # 6
-		ax.set_ylim(-8.5, 8.5)
-		ax.axes.xaxis.set_visible(False)
-		ax.axes.yaxis.set_visible(False)
+		fig, ax = plt.subplots(figsize=(config.env.fig_size_x, config.env.fig_size_y))
+		ax.set_xlim(-config.env.fig_size_x-0.5, config.env.fig_size_x+0.5)
+		ax.set_ylim(-config.env.fig_size_y-0.5, config.env.fig_size_y+0.5)
+		ax.axes.xaxis.set_visible(config.env.axes_visible)
+		ax.axes.yaxis.set_visible(config.env.axes_visible)
+		if config.env.axes_equal:
+			ax.set_aspect('equal')
 		# ax.set_xlabel('x(m)', fontsize=16)
 		# ax.set_ylabel('y(m)', fontsize=16)
 		plt.ion()

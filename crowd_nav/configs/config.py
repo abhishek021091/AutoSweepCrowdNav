@@ -19,6 +19,10 @@ class Config(object):
     env.time_step = 0.25
     env.val_size = 100
     env.test_size = 500
+    env.fig_size_x = 11
+    env.fig_size_y = 9
+    env.axes_equal = True
+    env.axes_visible = True
     # if randomize human behaviors, set to True, else set to False
     env.randomize_attributes = True
     env.num_processes = args.num_processes
@@ -44,11 +48,10 @@ class Config(object):
     sim.ellipse_b = sim.arena_height * np.sqrt(2)
     #sim.arena_size = 6
     sim.start_at_boundary = True
-    sim.empty_arena = True
+    sim.empty_arena = False
     sim.group = True
     sim.group_size = 2
-    sim.human_num = 1
-    # actual human num in each timestep, in [human_num-human_num_range, human_num+human_num_range]
+    sim.human_num = 3  #Don't put this value less than 1 just make self.empty arena True for empty arena, otherwise it will cause error in the code selfAttn_srnn_temp_node.py
     sim.human_num_range = 0
     sim.predict_steps = 5
     # 'const_vel': constant velocity model,
@@ -111,7 +114,8 @@ class Config(object):
     robot.sweep_stop = None
     robot.sweep_start = None
     robot.sweep_step = None
-    robot.sweep_direction = 0   # 0 for x-axis, 1 for y-axis
+    robot.sweep_dir = None
+    robot.sweep_axes = 0   # 0 for x-axis, 1 for y-axis
     robot.radius = 0.3
     robot.v_pref = 1
     robot.sensor = "coordinates"
