@@ -47,11 +47,11 @@ class Config(object):
     sim.ellipse_a = sim.arena_width * np.sqrt(2)
     sim.ellipse_b = sim.arena_height * np.sqrt(2)
     #sim.arena_size = 6
-    sim.start_at_boundary = True
-    sim.empty_arena = False
-    sim.group = True
+    sim.start_at_boundary = False
+    sim.empty_arena = 'random'   #True for empty arena, False for human crowd and random for both empty and human crowd
+    sim.group = False
     sim.group_size = 2
-    sim.human_num = 3  #Don't put this value less than 1 just make self.empty arena True for empty arena, otherwise it will cause error in the code selfAttn_srnn_temp_node.py
+    sim.human_num = 20  #Don't put this value less than 1 just make self.empty arena True for empty arena, otherwise it will cause error in the code selfAttn_srnn_temp_node.py
     sim.human_num_range = 0
     sim.predict_steps = 5
     # 'const_vel': constant velocity model,

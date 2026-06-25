@@ -31,6 +31,7 @@ class CrowdSim(gym.Env):
         self.time_limit = None
         self.time_step = None
         self.empty_arena = None # if True, no humans will be generated in the arena
+        self.current_empty_arena = None
         self.robot = None # a Robot instance representing the robot
         self.robot_radius = None
         self.humans = None
@@ -55,7 +56,8 @@ class CrowdSim(gym.Env):
         self.ellipse_a = None
         self.ellipse_b = None
         self.human_num = None
-
+        self.default_human_num = None
+        self.default_human_num_range = None
 
         self.action_space=None
         self.observation_space=None
@@ -120,6 +122,7 @@ class CrowdSim(gym.Env):
         self.ellipse_b = config.sim.ellipse_b
         self.empty_arena = config.sim.empty_arena
         self.human_num = config.sim.human_num
+        self.default_human_num = config.sim.human_num
         self.robot_radius = config.robot.radius
         self.human_radius = config.humans.radius
         self.start_at_boundary = config.sim.start_at_boundary
@@ -154,7 +157,7 @@ class CrowdSim(gym.Env):
 
         # set dummy human and dummy robot
         # dummy humans, used if any human is not in view of other agents
-        self.distance_outside_FOV = self.arena_width+self.arena_height + self.robot_radius + self.human_radius + 1
+        self.distance_outside_FOV = (self.arena_width**2)+(self.arena_height**2) + self.robot_radius + self.human_radius + 1
         self.dummy_human = Human(self.config, 'humans')
         # if a human is not in view, set its state to (px = 100, py = 100, vx = 0, vy = 0, theta = 0, radius = 0)
         self.dummy_human.set(self.distance_outside_FOV,
@@ -189,20 +192,7 @@ class CrowdSim(gym.Env):
 
         self.predict_steps = config.sim.predict_steps
         self.human_num_range = config.sim.human_num_range
-        # The SRNN/attention network assumes at least one human slot exists.
-        # Using human_num = 0 causes tensor dimensions and attention masks to become empty,
-        # leading to crashes (e.g. dummy_human_mask[0] access).
-        #
-        # For an empty arena, we keep exactly one "dummy" human located outside the
-        # environment. This preserves the expected observation and tensor shapes while
-        # behaving as if no humans are present from the robot's perspective.
-        #
-        # In short:
-        #   Real humans in arena = 0
-        #   Human slots in network = 1 (dummy human)
-        if self.empty_arena:
-            self.human_num = 1
-            self.human_num_range = 0
+        self.default_human_num_range = config.sim.human_num_range
         assert self.human_num > self.human_num_range
         self.max_human_num = self.human_num + self.human_num_range
         self.min_human_num = self.human_num - self.human_num_range
@@ -242,13 +232,12 @@ class CrowdSim(gym.Env):
         :param human_num: the total number of humans to be generated
         :return: None
         """
+
         # initial min separation distance to avoid danger penalty at beginning
         while len(self.humans) < human_num:
-            #import pdb; pdb.set_trace()
-            if self.empty_arena:
-                if self.empty_arena:
-                    self.humans = [self.dummy_human]
-                return
+            if self.current_empty_arena:
+                self.humans.extend([self.dummy_human])
+                break
             else:
                 logging.info('Generating human {}/{}'.format(len(self.humans)+1, human_num))
                 spawned_entity = self.generate_ellipse_crossing_human()

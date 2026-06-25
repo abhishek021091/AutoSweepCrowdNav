@@ -123,8 +123,23 @@ class CrowdSimVarNum(CrowdSim):
                         break
                 self.robot.set(px, py, gx, gy, 0, 0, np.pi / 2)
                 # generate humans
-                self.human_num = np.random.randint(low=self.human_num - self.human_num_range,
-                                                   high=self.human_num + self.human_num_range + 1)
+                curr_human_num = self.default_human_num
+                human_num_range = self.default_human_num_range
+
+                logging.info(f"curr_human_num: {curr_human_num}, human_num_range: {human_num_range}")
+                if self.empty_arena == "random":
+                    self.current_empty_arena = np.random.choice([True, False])
+                    logging.info(f"current_empty_arena: {self.current_empty_arena}")
+                elif self.empty_arena:
+                    self.current_empty_arena = True
+                else:
+                    self.current_empty_arena = False
+
+                if self.current_empty_arena:
+                    curr_human_num = 1
+                    human_num_range = 0
+
+                self.human_num = np.random.randint(low=curr_human_num - human_num_range,high=curr_human_num + human_num_range + 1)
 
 
             self.generate_random_human_position(human_num=self.human_num)
