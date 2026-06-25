@@ -137,9 +137,9 @@ class CrowdSimVarNum(CrowdSim):
 
                 if self.current_empty_arena:
                     curr_human_num = 1
-                    human_num_range = 0
+                    self.human_num_range = 0
 
-                self.human_num = np.random.randint(low=curr_human_num - human_num_range,high=curr_human_num + human_num_range + 1)
+                self.human_num = np.random.randint(low=curr_human_num - self.human_num_range,high=curr_human_num + self.human_num_range + 1)
 
 
             self.generate_random_human_position(human_num=self.human_num)
@@ -503,6 +503,7 @@ class CrowdSimVarNum(CrowdSim):
         self.step_counter =self.step_counter+1
 
         info={'info':episode_info}
+        info['is_episode_empty_arena'] = self.current_empty_arena
 
         # Add or remove at most self.human_num_range humans
         # if self.human_num_range == 0 -> human_num is fixed at all times
@@ -528,13 +529,14 @@ class CrowdSimVarNum(CrowdSim):
                 add_num = np.random.randint(low=0, high=self.human_num_range + 1)
                 if add_num > 0:
                     # set human ids
-                    true_add_num = 0
-                    for i in range(self.human_num, self.human_num + add_num):
-                        if i == self.human_num + self.human_num_range:
+                    old_human_num = self.human_num
+                    for i in range(old_human_num, old_human_num + add_num):
+                        if i == self.max_human_num:
                             break
-                        self.generate_random_human_position(human_num=1)
+                        self.generate_random_human_position(human_num=i + 1)
+                    true_add_num = len(self.humans) - old_human_num
+                    for i in range(old_human_num, len(self.humans)):
                         self.humans[i].id = i
-                        true_add_num = true_add_num + 1
                     self.human_num = self.human_num + true_add_num
                     if true_add_num > 0:
                         self.last_human_states = np.concatenate((self.last_human_states, np.array([[15, 15, 0, 0, 0.3]]*true_add_num)), axis=0)
@@ -811,4 +813,3 @@ class CrowdSimVarNum(CrowdSim):
         plt.pause(0.01)
         for item in artists:
             item.remove()
-

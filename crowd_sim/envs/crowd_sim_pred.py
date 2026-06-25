@@ -184,13 +184,15 @@ class CrowdSimPred(CrowdSimVarNum):
                 add_num = np.random.randint(low=0, high=self.human_num_range + 1)
                 if add_num > 0:
                     # set human ids
-                    true_add_num = 0
-                    for i in range(self.human_num, self.human_num + add_num):
-                        if i == self.config.sim.human_num + self.human_num_range:
+                    old_human_num = self.human_num
+                    for i in range(old_human_num, old_human_num + add_num):
+                        if i == self.max_human_num:
                             break
-                        self.generate_random_human_position(human_num=1)
+                        self.generate_random_human_position(human_num=i + 1)
+                    true_add_num = len(self.humans) - old_human_num
+                    for i in range(old_human_num, len(self.humans)):
                         self.humans[i].id = i
-                        true_add_num = true_add_num + 1
+                        self.cur_human_states[i] = np.array([self.humans[i].px, self.humans[i].py, self.humans[i].radius])
                     self.human_num = self.human_num + true_add_num
                     if true_add_num > 0:
                         self.last_human_states = np.concatenate((self.last_human_states, np.array([[15, 15, 0, 0, 0.3]]*true_add_num)), axis=0)

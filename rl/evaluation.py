@@ -26,10 +26,23 @@ def evaluate(actor_critic, eval_envs, num_processes, device, test_size, logging,
     success_times = []
     collision_times = []
     timeout_times = []
-
+    
+    empty_arena = 0
+    crowded_arena = 0
     success = 0
     collision = 0
     timeout = 0
+
+    empty_episode_count = 0
+    empty_success = 0
+    empty_collision = 0
+    empty_timeout = 0
+
+    crowd_episode_count = 0
+    crowd_success = 0
+    crowd_collision = 0
+    crowd_timeout = 0
+
     too_close_ratios = []
     min_dist = []
 
@@ -117,22 +130,41 @@ def evaluate(actor_critic, eval_envs, num_processes, device, test_size, logging,
         all_path_len.append(path_len)
         too_close_ratios.append(too_close/stepCounter*100)
 
+        is_empty = infos[0].get('is_episode_empty_arena', getattr(baseEnv, 'current_empty_arena', False))
+        if is_empty:
+            empty_arena += 1
+            empty_episode_count += 1
+        else:
+            crowded_arena += 1
+            crowd_episode_count += 1
 
         if isinstance(infos[0]['info'], ReachGoal):
             success += 1
+            if is_empty:
+                empty_success += 1
+            else:
+                crowd_success += 1
             success_times.append(global_time)
             print('Success')
         elif isinstance(infos[0]['info'], Collision):
             collision += 1
+            if is_empty:
+                empty_collision += 1
+            else:
+                crowd_collision += 1
             collision_cases.append(k)
             collision_times.append(global_time)
             print('Collision')
         elif isinstance(infos[0]['info'], Timeout):
             timeout += 1
+            if is_empty:
+                empty_timeout += 1
+            else:
+                crowd_timeout += 1
             timeout_cases.append(k)
             timeout_times.append(time_limit)
             print('Time out')
-        elif isinstance(infos[0]['info'] is None):
+        elif infos[0]['info'] is None:
             pass
         else:
             raise ValueError('Invalid end signal from environment')
@@ -145,17 +177,32 @@ def evaluate(actor_critic, eval_envs, num_processes, device, test_size, logging,
     avg_nav_time = sum(success_times) / len(
         success_times) if success_times else time_limit  # baseEnv.env.time_limit
 
+    empty_success_rate = empty_success / empty_episode_count if empty_episode_count else np.nan
+    empty_collision_rate = empty_collision / empty_episode_count if empty_episode_count else np.nan
+    empty_timeout_rate = empty_timeout / empty_episode_count if empty_episode_count else np.nan
+
+    crowd_success_rate = crowd_success / crowd_episode_count if crowd_episode_count else np.nan
+    crowd_collision_rate = crowd_collision / crowd_episode_count if crowd_episode_count else np.nan
+    crowd_timeout_rate = crowd_timeout / crowd_episode_count if crowd_episode_count else np.nan
+    avg_min_dist = np.mean(min_dist) if min_dist else np.nan
+    mean_eval_reward = np.mean(eval_episode_rewards) if eval_episode_rewards else np.nan
+
     # logging
     logging.info(
-        'Testing success rate: {:.2f}, collision rate: {:.2f}, timeout rate: {:.2f}, '
+        'Is Empty Arena: {}, Is Crowded Arena: {}, Testing success rate: {:.2f}, collision rate: {:.2f}, timeout rate: {:.2f}, '
         'nav time: {:.2f}, path length: {:.2f}, average intrusion ratio: {:.2f}%, '
         'average minimal distance during intrusions: {:.2f}'.
-            format(success_rate, collision_rate, timeout_rate, avg_nav_time, np.mean(all_path_len),
-                   np.mean(too_close_ratios), np.mean(min_dist)))
+            format(empty_arena, crowded_arena, success_rate, collision_rate, timeout_rate, avg_nav_time, np.mean(all_path_len),
+                   np.mean(too_close_ratios), avg_min_dist))
+    logging.info(
+        'Empty arena episodes: {}, success rate: {:.2f}, collision rate: {:.2f}, timeout rate: {:.2f}; '
+        'Crowded arena episodes: {}, success rate: {:.2f}, collision rate: {:.2f}, timeout rate: {:.2f}'.
+            format(empty_episode_count, empty_success_rate, empty_collision_rate, empty_timeout_rate,
+                   crowd_episode_count, crowd_success_rate, crowd_collision_rate, crowd_timeout_rate))
 
     logging.info('Collision cases: ' + ' '.join([str(x) for x in collision_cases]))
     logging.info('Timeout cases: ' + ' '.join([str(x) for x in timeout_cases]))
     print(" Evaluation using {} episodes: mean reward {:.5f}\n".format(
-        len(eval_episode_rewards), np.mean(eval_episode_rewards)))
+        len(eval_episode_rewards), mean_eval_reward))
 
     eval_envs.close()

@@ -8,7 +8,7 @@ def get_args():
 
     # the saving directory for train.py
     parser.add_argument(
-        '--output_dir', type=str, default='trained_models/my_model')
+        '--output_dir', type=str, default='trained_models/my_model_empty_arena', help='directory to save trained models')
 
     # resume training from an existing checkpoint or not
     parser.add_argument(
