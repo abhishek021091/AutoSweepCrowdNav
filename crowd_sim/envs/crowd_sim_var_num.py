@@ -60,11 +60,35 @@ class CrowdSimVarNum(CrowdSim):
         high = np.inf * np.ones([2, ])
         self.action_space = gym.spaces.Box(-high, high, dtype=np.float32)
 
+    def reach_nearest_corner(self, px, py):
+        margin = self.robot.radius + 0.2
+        gx = np.sign(px) * (self.arena_width - margin)
+        gy = np.sign(py) * (self.arena_height - margin)
+        self.robot.sweep_start = (gx, gy)
+        if self.robot_sweep_axes == 0:
+            self.robot.sweep_dir = -1 if gx > 0 else 1
+            total_lanes_required = (self.arena_width*2)/(self.robot_radius*2)
+            if total_lanes_required % 2 == 0:
+                self.robot.sweep_stop = (gx, -gy)
+            else:
+                self.robot.sweep_stop = (-gx, -gy)
+        else:
+            self.robot.sweep_dir = -1 if gy > 0 else 1
+            total_lanes_required = (self.arena_height*2)/(self.robot_radius*2)
+            if total_lanes_required % 2 == 0:
+                self.robot.sweep_stop = (-gx, gy)
+            else:
+                self.robot.sweep_stop = (-gx, -gy)
+        return gx, gy
+        
+
+
 
     # set robot initial state and generate all humans for reset function
     # for crowd nav: human_num == self.human_num
     # for leader follower: human_num = self.human_num - 1
     def generate_robot_humans(self, phase, human_num=None):
+        #import pdb; pdb.set_trace()
         if self.record:
             px, py = 0, 0
             gx, gy = 0, -1.5
@@ -83,30 +107,15 @@ class CrowdSimVarNum(CrowdSim):
                 angle = np.random.uniform(0, np.pi * 2)
                 px = self.arena_width * np.cos(angle)
                 py = self.arena_height * np.sin(angle)
+                logging.info('Robot Sweep:{}',{self.robot_sweep})
                 if self.robot_sweep:
-                    margin = self.robot.radius + 0.2
-                    gx = np.sign(px) * (self.arena_width - margin)
-                    gy = np.sign(py) * (self.arena_height - margin)
-                    self.robot.sweep_start = [gx, gy]
-                    if self.robot_sweep_axes == 0:
-                        self.robot.sweep_dir = -1 if gx > 0 else 1
-                        total_steps_required = (self.arena_width*2)/(self.robot_radius*2)
-                        if total_steps_required % 2 == 0:
-                            self.robot.sweep_stop = [gx, -gy]
-                        else:
-                            self.robot.sweep_stop = [-gx, -gy]
-                    else:
-                        self.robot.sweep_dir = -1 if gy > 0 else 1
-                        total_steps_required = (self.arena_height*2)/(self.robot_radius*2)
-                        if total_steps_required % 2 == 0:
-                            self.robot.sweep_stop = [-gx, gy]
-                        else:
-                            self.robot.sweep_stop = [-gx, -gy]
+                    gx, gy = self.reach_nearest_corner(px,py)
                 else:
                     while True:
                         gx, gy = np.random.uniform(-self.arena_width, self.arena_width, 2)
                         if np.linalg.norm([px - gx, py - gy]) >= 4:  # 1 was 6
                             break
+                logging.info('Robot initial position: ({}, {}), goal: ({}, {})'.format(px, py, gx, gy))
                 self.robot.set(px, py, gx, gy, 0, 0, np.random.uniform(0, 2 * np.pi))  # randomize init orientation
                 # 1 to 4 humans
                 self.human_num = np.random.randint(1, self.human_num + self.human_num_range + 1)
@@ -116,11 +125,19 @@ class CrowdSimVarNum(CrowdSim):
 
             # for sim exp
             else:
+                angle = np.random.uniform(0, np.pi * 2)
+                px = self.arena_width * np.cos(angle)
+                py = self.arena_height * np.sin(angle)
+                if self.robot_sweep:
+                    gx, gy = self.reach_nearest_corner(px, py)
+                
+                else:
                 # generate robot
-                while True:
-                    px, py, gx, gy = np.random.uniform(-self.arena_width, self.arena_width, 4)
-                    if np.linalg.norm([px - gx, py - gy]) >= 8: # 6
-                        break
+                    while True:
+                        gx,= np.random.uniform(-self.arena_width, self.arena_width)
+                        gy = np.random.uniform(-self.arena_height, self.arena_height)
+                        if np.linalg.norm([px - gx, py - gy]) >= 8: # 6
+                            break
                 self.robot.set(px, py, gx, gy, 0, 0, np.pi / 2)
                 # generate humans
                 curr_human_num = self.default_human_num
@@ -348,38 +365,37 @@ class CrowdSimVarNum(CrowdSim):
         if self.robot.sweep_axes == 0:
             gx = self.robot.px + (self.robot.sweep_dir * self.robot_sweep_step)
             gy = self.robot.py
-            # hit right wall
             if gx > self.arena_width - margin:
-                gx = self.arena_width - margin
-                # move to next lane
-                gy += lane_step
-                # reverse direction
-                self.robot.sweep_dir = -1
-            # hit left wall
+                if self.robot.px > self.arena_width - margin:
+                    gx = self.arena_width - margin
+                else:
+                    gx = self.arena_width - margin
+                    gy += lane_step
+                    self.robot.sweep_dir = -1
             elif gx < -self.arena_width + margin:
-                gx = -self.arena_width + margin
-                # move to next lane
-                gy += lane_step
-                # reverse direction
-                self.robot.sweep_dir = 1
-        # Vertical lawnmower sweep
+                if self.robot.px < -self.arena_width + margin:
+                    gx = -self.arena_width + margin
+                else:
+                    gx = -self.arena_width + margin
+                    gy += lane_step
+                    self.robot.sweep_dir = 1
         else:
             gx = self.robot.px
             gy = self.robot.py + self.robot.sweep_dir * self.robot_sweep_step
-            # hit top wall
             if gy > self.arena_height - margin:
-                gy = self.arena_height - margin
-                # move to next lane
-                gx += lane_step
-                # reverse direction
-                self.robot.sweep_dir = -1
-            # hit bottom wall
+                if self.robot.py > self.arena_height - margin:
+                    gy = self.arena_height - margin
+                else:
+                    gy = self.arena_height - margin
+                    gx += lane_step
+                    self.robot.sweep_dir = -1
             elif gy < -self.arena_height + margin:
-                gy = -self.arena_height + margin
-                # move to next lane
-                gx += lane_step
-                # reverse direction
-                self.robot.sweep_dir = 1
+                if self.robot.py < -self.arena_height + margin:
+                    gy = -self.arena_height + margin
+                else:
+                    gy = -self.arena_height + margin
+                    gx += lane_step
+                    self.robot.sweep_dir = 1
         self.robot.gx = gx
         self.robot.gy = gy
 

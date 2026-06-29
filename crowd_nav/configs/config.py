@@ -48,7 +48,7 @@ class Config(object):
     sim.ellipse_b = sim.arena_height * np.sqrt(2)
     #sim.arena_size = 6
     sim.start_at_boundary = False
-    sim.empty_arena = 'random'   #True for empty arena, False for human crowd and random for both empty and human crowd
+    sim.empty_arena = True   #True for empty arena, False for human crowd and random for both empty and human crowd
     sim.group = False
     sim.group_size = 2
     sim.human_num = 5  #Don't put this value less than 1 just make self.empty arena True for empty arena, otherwise it will cause error in the code selfAttn_srnn_temp_node.py
@@ -110,7 +110,7 @@ class Config(object):
     robot.visible = False
     # For baseline: srnn; our method: selfAttn_merge_srnn
     robot.policy = 'selfAttn_merge_srnn'
-    robot.sweep = False
+    robot.sweep = True
     robot.sweep_stop = None
     robot.sweep_start = None
     robot.sweep_step = None
