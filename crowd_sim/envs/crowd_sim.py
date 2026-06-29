@@ -69,11 +69,10 @@ class CrowdSim(gym.Env):
         self.dummy_human = None
         self.dummy_robot = None
         self.robot_sweep = None
-        self.robot_sweep_stop = None
-        self.robot_sweep_start = None
-        self.robot_sweep_step = None
         self.robot_sweep_axes = None
-        self.robot_sweep_dir = None
+        self.robot_sweep_step = None
+        self.robot_sweep_margin = None
+        self.robot_sweep_lane_step = None
 
         #seed
         self.thisSeed=None # the seed will be set when the env is created
@@ -129,11 +128,10 @@ class CrowdSim(gym.Env):
         self.group = config.sim.group
         self.group_size = config.sim.group_size
         self.robot_sweep = config.robot.sweep
-        self.robot_sweep_stop = config.robot.sweep_stop
-        self.robot_sweep_start = config.robot.sweep_start
-        self.robot_sweep_step = config.robot.sweep_step
         self.robot_sweep_axes = config.robot.sweep_axes
-        self.robot_sweep_dir = config.robot.sweep_dir
+        self.robot_sweep_step = config.robot.sweep_step
+        self.robot_sweep_margin = config.robot.sweep_margin
+        self.robot_sweep_lane_step = config.robot.sweep_lane_step
 
         #self.arena_size = config.sim.arena_size
         self.arena_width = config.sim.arena_width

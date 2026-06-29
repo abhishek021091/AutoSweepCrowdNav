@@ -50,7 +50,8 @@ class Agent(object):
         self.v_pref = np.random.uniform(0.5, 1.5)
         self.radius = np.random.uniform(0.3, 0.5)
 
-    def set(self, px, py, gx, gy, vx, vy, theta, radius=None, v_pref=None, group_size=1):
+    def set(self, px, py, gx, gy, vx, vy, theta,agent = 'robot', radius=None, v_pref=None, group_size=1,
+            sweep_stop=None, sweep_start=None, sweep_dir=None):
         self.px = px
         self.py = py
         self.gx = gx
@@ -59,6 +60,10 @@ class Agent(object):
         self.vy = vy
         self.theta = theta
         self.group_size = group_size
+        if agent == 'robot':
+            self.sweep_stop = sweep_stop
+            self.sweep_start = sweep_start
+            self.sweep_dir = sweep_dir
 
         if radius is not None:
             self.radius = radius

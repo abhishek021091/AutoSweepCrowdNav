@@ -15,7 +15,7 @@ class Config(object):
 
     # general configs for OpenAI gym env
     env = BaseConfig()
-    env.time_limit = 50
+    env.time_limit = 600
     env.time_step = 0.25
     env.val_size = 100
     env.test_size = 500
@@ -111,12 +111,11 @@ class Config(object):
     # For baseline: srnn; our method: selfAttn_merge_srnn
     robot.policy = 'selfAttn_merge_srnn'
     robot.sweep = True
-    robot.sweep_stop = None
-    robot.sweep_start = None
-    robot.sweep_step = None
-    robot.sweep_dir = None
+    robot.sweep_step = 15
     robot.sweep_axes = 0   # 0 for x-axis, 1 for y-axis
     robot.radius = 0.3
+    robot.sweep_margin = robot.radius + 0.2
+    robot.sweep_lane_step = robot.radius * 2
     robot.v_pref = 1
     robot.sensor = "coordinates"
     # FOV = this values * PI
