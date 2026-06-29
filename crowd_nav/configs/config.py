@@ -34,6 +34,7 @@ class Config(object):
     reward = BaseConfig()
     reward.success_reward = 10
     reward.collision_penalty = -20
+    reward.time_penalty_factor = -0.01
     # discomfort distance
     reward.discomfort_dist = 0.25
     reward.discomfort_penalty_factor = 10
@@ -111,7 +112,7 @@ class Config(object):
     # For baseline: srnn; our method: selfAttn_merge_srnn
     robot.policy = 'selfAttn_merge_srnn'
     robot.sweep = True
-    robot.sweep_step = 15
+    robot.sweep_step = 2
     robot.sweep_axes = 0   # 0 for x-axis, 1 for y-axis
     robot.radius = 0.3
     robot.sweep_margin = robot.radius + 0.2

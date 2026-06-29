@@ -369,14 +369,20 @@ class CrowdSimVarNum(CrowdSim):
                     gx = self.arena_width - self.robot_sweep_margin
                 else:
                     gx = self.arena_width - self.robot_sweep_margin
-                    gy += self.robot_sweep_lane_step
+                    if np.sign(gy) == 1:
+                        gy -= self.robot_sweep_lane_step
+                    else:  
+                        gy += self.robot_sweep_lane_step
                     self.robot.sweep_dir = -1
             elif gx < -self.arena_width + self.robot_sweep_margin:
                 if self.robot.px < -self.arena_width + self.robot_sweep_margin:
                     gx = -self.arena_width + self.robot_sweep_margin
                 else:
                     gx = -self.arena_width + self.robot_sweep_margin
-                    gy += self.robot_sweep_lane_step
+                    if np.sign(gy) == 1:
+                        gy -= self.robot_sweep_lane_step
+                    else:
+                        gy += self.robot_sweep_lane_step
                     self.robot.sweep_dir = 1
         else:
             gx = self.robot.px
@@ -386,14 +392,20 @@ class CrowdSimVarNum(CrowdSim):
                     gy = self.arena_height - self.robot_sweep_margin
                 else:
                     gy = self.arena_height - self.robot_sweep_margin
-                    gx += self.robot_sweep_lane_step
+                    if np.sign(gx) == 1:
+                        gx-=self.robot_sweep_lane_step
+                    else:
+                        gx += self.robot_sweep_lane_step
                     self.robot.sweep_dir = -1
             elif gy < -self.arena_height + self.robot_sweep_margin:
                 if self.robot.py < -self.arena_height + self.robot_sweep_margin:
                     gy = -self.arena_height + self.robot_sweep_margin
                 else:
                     gy = -self.arena_height + self.robot_sweep_margin
-                    gx += self.robot_sweep_lane_step
+                    if np.sign(gx) == 1:
+                        gx-=self.robot_sweep_lane_step
+                    else:
+                        gx += self.robot_sweep_lane_step
                     self.robot.sweep_dir = 1
         self.robot.gx = gx
         self.robot.gy = gy
@@ -652,11 +664,11 @@ class CrowdSimVarNum(CrowdSim):
             episode_info = Collision()
         elif reaching_goal:
             if self.robot_sweep:
+                reward = self.success_reward
+                episode_info = ReachGoal()
                 self.update_robot_sweep_goal()
                 if self.robot.gx == self.robot.sweep_stop[0] and self.robot.gy == self.robot.sweep_stop[1]:
-                    reward = self.success_reward
                     done = True
-                    episode_info = ReachGoal()
                 else:
                     reward = self.success_reward
                     done = False

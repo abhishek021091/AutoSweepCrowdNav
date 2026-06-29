@@ -15,7 +15,7 @@ def get_args():
         '--resume', default=False, action='store_true')
     # if resume = True, load from the following checkpoint
     parser.add_argument(
-        '--load-path', default='trained_models/my_model_empty_arena/checkpoints/03000.pt',
+        '--load-path', default='trained_models/sweep_arena/checkpoints/01400.pt',
         help='path of weights for resume training')
     parser.add_argument(
         '--overwrite',
