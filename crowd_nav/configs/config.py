@@ -113,13 +113,14 @@ class Config(object):
     robot.policy = 'selfAttn_merge_srnn'
     robot.sweep = True
     robot.sweep_step = 2
-    robot.sweep_axes = 'random'   # 0 for x-axis, 1 for y-axis, random for randomly choosing axes
+    robot.sweep_axes = 0   # 0 for x-axis, 1 for y-axis, random for randomly choosing axes
     robot.sweep_tail = 1 # leaves skyblue mark in sweeped area
     robot.radius = 0.3
     robot.sweep_margin = robot.radius + 0.2
     robot.sweep_lane_step = robot.radius * 2
     robot.v_pref = 1
     robot.sensor = "coordinates"
+    robot.controller = "ppo"  #pid for using pid controller, ppo for using ppo
     # FOV = this values * PI
     robot.FOV = 2
     # radius of perception range

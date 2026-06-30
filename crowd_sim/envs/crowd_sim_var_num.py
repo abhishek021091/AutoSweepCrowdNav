@@ -631,6 +631,8 @@ class CrowdSimVarNum(CrowdSim):
             
         dist_to_goal = norm(np.array(self.robot.get_position()) - np.array(self.robot.get_goal_position()))
         reaching_goal = dist_to_goal < self.robot.radius
+
+
         if self.step_counter % 20 == 0:
             logging.info(
                 f"step={self.step_counter}, "
@@ -671,11 +673,13 @@ class CrowdSimVarNum(CrowdSim):
             episode_info = Collision()
         elif reaching_goal:
             if self.robot_sweep:
-                reward = self.success_reward + (self.step_counter - self.prev_step) * self.step_penalty
+                reward = self.success_reward
                 self.prev_step = self.step_counter
                 done = False
                 episode_info = ReachGoal()
                 self.update_robot_sweep_goal()
+                rob_goal_vec = np.array([self.robot.gx, self.robot.gy]) - np.array([self.robot.px, self.robot.py])
+                self.potential = -abs(np.linalg.norm(rob_goal_vec))
                 if self.robot.gx == self.robot.sweep_stop[0] and self.robot.gy == self.robot.sweep_stop[1]:
                     done = True
                 else:
