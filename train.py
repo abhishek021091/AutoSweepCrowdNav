@@ -223,13 +223,14 @@ def main():
 			end = time.time()
 			print(
 				"Updates {}, num timesteps {}, FPS {} \n Last {} training episodes: mean/median reward "
-				"{:.1f}/{:.1f}, min/max reward {:.1f}/{:.1f}\n"
+				"{:.1f}/{:.1f}, min/max reward {:.1f}/{:.1f}, dist_entropy {:.2f}, value_loss {:.2f}, action_loss {:.2f}"
+				" \n Total Time Taken {:.2f} mins \n"
 					.format(j, total_num_steps,
 							int(total_num_steps / (end - start)),
 							len(episode_rewards), np.mean(episode_rewards),
 							np.median(episode_rewards), np.min(episode_rewards),
 							np.max(episode_rewards), dist_entropy, value_loss,
-							action_loss))
+							action_loss,((end-start)/60)))
 
 			df = pd.DataFrame({'misc/nupdates': [j], 'misc/total_timesteps': [total_num_steps],
 							   'fps': int(total_num_steps / (end - start)), 'eprewmean': [np.mean(episode_rewards)],

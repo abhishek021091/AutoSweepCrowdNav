@@ -64,7 +64,11 @@ class CrowdSimVarNum(CrowdSim):
         gx = np.sign(px) * (self.arena_width - self.robot_sweep_margin)
         gy = np.sign(py) * (self.arena_height - self.robot_sweep_margin)
         sweep_start = (gx, gy)
-        if self.robot_sweep_axes == 0:
+        if self.robot_sweep_axes == 'random':
+            sweep_axes = np.random.randint(0,2)
+        else:
+            sweep_axes = self.robot_sweep_axes
+        if sweep_axes == 0:
             sweep_dir = -1 if gx > 0 else 1
             total_lanes_required = (self.arena_width*2)/(self.robot_radius*2)
             if total_lanes_required % 2 == 0:
@@ -81,7 +85,8 @@ class CrowdSimVarNum(CrowdSim):
         self.robot.set(px, py, gx, gy, 0, 0, np.random.uniform(0, 2 * np.pi),agent = 'robot',
                        sweep_stop=sweep_stop,
                        sweep_start=sweep_start,
-                       sweep_dir=sweep_dir)
+                       sweep_dir=sweep_dir,
+                       sweep_axes = sweep_axes)
         
 
 
@@ -361,47 +366,49 @@ class CrowdSimVarNum(CrowdSim):
 
     def update_robot_sweep_goal(self):
         # Horizontal lawnmower sweep
-        if self.robot_sweep_axes == 0:
-            gx = self.robot.px + (self.robot.sweep_dir * self.robot_sweep_step)
-            gy = self.robot.py
-            if gx > self.arena_width - self.robot_sweep_margin:
-                if self.robot.px > self.arena_width - self.robot_sweep_margin:
+        #self.robot_sweep_step = np.clip(self.robot_sweep_step,max(self.arena_height,-self.arena_width),min(self.arena_height,self.arena_width))
+        if self.robot.sweep_axes == 0: #x-axes sweep
+            gx = self.robot.gx + (self.robot.sweep_dir * self.robot_sweep_step)
+            gy = self.robot.gy
+            #gy = self.robot.py
+            if gx > self.arena_width - self.robot_sweep_margin:   #check for right wall
+                if self.robot.gx != self.arena_width - self.robot_sweep_margin:
                     gx = self.arena_width - self.robot_sweep_margin
                 else:
-                    gx = self.arena_width - self.robot_sweep_margin
-                    if np.sign(gy) == 1:
+                    gx = self.robot.gx
+                    if self.robot.sweep_start[1]>0:
                         gy -= self.robot_sweep_lane_step
                     else:  
                         gy += self.robot_sweep_lane_step
                     self.robot.sweep_dir = -1
-            elif gx < -self.arena_width + self.robot_sweep_margin:
-                if self.robot.px < -self.arena_width + self.robot_sweep_margin:
+            elif gx < -self.arena_width + self.robot_sweep_margin:  #check for left wall
+                if self.robot.gx != -self.arena_width + self.robot_sweep_margin:
                     gx = -self.arena_width + self.robot_sweep_margin
                 else:
-                    gx = -self.arena_width + self.robot_sweep_margin
-                    if np.sign(gy) == 1:
+                    gx = self.robot.gx
+                    if self.robot.sweep_start[1]>0:
                         gy -= self.robot_sweep_lane_step
                     else:
                         gy += self.robot_sweep_lane_step
                     self.robot.sweep_dir = 1
-        else:
-            gx = self.robot.px
-            gy = self.robot.py + self.robot.sweep_dir * self.robot_sweep_step
+        else: # y-axes sweep
+            gx = self.robot.gx
+            gy = self.robot.gy + self.robot.sweep_dir * self.robot_sweep_step
             if gy > self.arena_height - self.robot_sweep_margin:
-                if self.robot.py > self.arena_height - self.robot_sweep_margin:
+                if self.robot.gx != self.arena_height - self.robot_sweep_margin:
                     gy = self.arena_height - self.robot_sweep_margin
                 else:
-                    gy = self.arena_height - self.robot_sweep_margin
+                    gy = self.robot.gy
                     if np.sign(gx) == 1:
                         gx-=self.robot_sweep_lane_step
                     else:
                         gx += self.robot_sweep_lane_step
                     self.robot.sweep_dir = -1
             elif gy < -self.arena_height + self.robot_sweep_margin:
-                if self.robot.py < -self.arena_height + self.robot_sweep_margin:
+                if self.robot.py != -self.arena_height + self.robot_sweep_margin:
                     gy = -self.arena_height + self.robot_sweep_margin
                 else:
-                    gy = -self.arena_height + self.robot_sweep_margin
+                    gy = self.robot.gy
                     if np.sign(gx) == 1:
                         gx-=self.robot_sweep_lane_step
                     else:
@@ -664,7 +671,9 @@ class CrowdSimVarNum(CrowdSim):
             episode_info = Collision()
         elif reaching_goal:
             if self.robot_sweep:
-                reward = self.success_reward
+                reward = self.success_reward + (self.step_counter - self.prev_step) * self.step_penalty
+                self.prev_step = self.step_counter
+                done = False
                 episode_info = ReachGoal()
                 self.update_robot_sweep_goal()
                 if self.robot.gx == self.robot.sweep_stop[0] and self.robot.gy == self.robot.sweep_stop[1]:
@@ -754,6 +763,12 @@ class CrowdSimVarNum(CrowdSim):
 
         # add robot
         robotX,robotY=self.robot.get_position()
+        import pbd; pbd.set_trace()
+        if self.sweep_tail:
+            self.swept_points.append((robotX,robotY))
+            for x,y in self.swept_points:
+                patch = plt.Circle((x, y),radius=self.robot.radius,facecolor='skyblue',edgecolor='none',alpha=0.35,zorder=0)
+                ax.add_patch(patch)
 
         robot=plt.Circle((robotX,robotY), self.robot.radius, fill=True, color=robot_color)
         ax.add_artist(robot)

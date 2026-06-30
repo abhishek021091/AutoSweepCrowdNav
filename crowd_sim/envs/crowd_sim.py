@@ -73,6 +73,10 @@ class CrowdSim(gym.Env):
         self.robot_sweep_step = None
         self.robot_sweep_margin = None
         self.robot_sweep_lane_step = None
+        self.prev_step = None
+        self.step_penalty = None
+        self.sweep_tail = None
+        self.swept_points = None
 
         #seed
         self.thisSeed=None # the seed will be set when the env is created
@@ -132,6 +136,11 @@ class CrowdSim(gym.Env):
         self.robot_sweep_step = config.robot.sweep_step
         self.robot_sweep_margin = config.robot.sweep_margin
         self.robot_sweep_lane_step = config.robot.sweep_lane_step
+        self.prev_step = 0
+        self.step_penalty = self.config.reward.step_penalty
+        self.sweep_tail = self.config.robot.sweep_tail
+        if self.sweep_tail:
+            self.swept_points = []
 
         #self.arena_size = config.sim.arena_size
         self.arena_width = config.sim.arena_width

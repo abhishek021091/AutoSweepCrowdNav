@@ -145,6 +145,14 @@ class CrowdSimPredRealGST(CrowdSimPred):
         # add robot
         robotX,robotY=self.robot.get_position()
 
+        
+        if self.sweep_tail:
+            self.swept_points.append((robotX,robotY))
+            x,y = self.swept_points[-1]
+            patch = plt.Circle((x, y),radius=self.robot.radius,facecolor='skyblue',edgecolor='none',alpha=0.35,zorder=0)
+            ax.add_patch(patch)
+
+
         robot=plt.Circle((robotX,robotY), self.robot.radius, fill=True, color=robot_color)
         ax.add_artist(robot)
         artists.append(robot)
