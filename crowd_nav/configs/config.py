@@ -120,7 +120,7 @@ class Config(object):
     robot.sweep_lane_step = robot.radius * 2
     robot.v_pref = 1
     robot.sensor = "coordinates"
-    robot.controller = "ppo"  #pid for using pid controller, ppo for using ppo
+    robot.controller = "pid"  #pid for using pid controller, ppo for using ppo
     # FOV = this values * PI
     robot.FOV = 2
     # radius of perception range

@@ -164,7 +164,7 @@ class CrowdSim(gym.Env):
 
         # set dummy human and dummy robot
         # dummy humans, used if any human is not in view of other agents
-        self.distance_outside_FOV = 2 * (self.arena_width**2 + self.arena_height**2)
+        self.distance_outside_FOV = 4 * (self.arena_width**2 + self.arena_height**2)
         self.dummy_human = Human(self.config, 'humans')
         # if a human is not in view, set its state to (px = 100, py = 100, vx = 0, vy = 0, theta = 0, radius = 0)
         self.dummy_human.set(self.distance_outside_FOV,

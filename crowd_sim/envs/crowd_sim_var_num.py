@@ -630,7 +630,14 @@ class CrowdSimVarNum(CrowdSim):
             goal_radius = self.robot.radius
             
         dist_to_goal = norm(np.array(self.robot.get_position()) - np.array(self.robot.get_goal_position()))
-        reaching_goal = dist_to_goal < self.robot.radius
+
+        if (((np.isclose(self.robot.gx, self.arena_width - self.robot_sweep_margin) 
+            or (np.isclose(self.robot.gx, -self.arena_width + self.robot_sweep_margin))) and self.robot.sweep_axes == 0)
+            or (((np.isclose(self.robot.gy, self.arena_height - self.robot_sweep_margin)) 
+            or (np.isclose(self.robot.gy, -self.arena_height + self.robot_sweep_margin))) and self.robot.sweep_axes == 1)): 
+            reaching_goal = np.isclose(dist_to_goal, 0.0,atol=0.05)
+        else:
+            reaching_goal = dist_to_goal < (self.robot.radius+0.7)
 
 
         if self.step_counter % 20 == 0:
@@ -639,7 +646,7 @@ class CrowdSimVarNum(CrowdSim):
                 f"pos=({self.robot.px:.2f},{self.robot.py:.2f}), "
                 f"goal=({self.robot.gx:.2f},{self.robot.gy:.2f}), "
                 f"v=({self.robot.vx:.2f},{self.robot.vy:.2f}), "
-                f"dist={dist_to_goal:.2f}, "
+                f"dist={dist_to_goal:}, "
                 f"action={action}, "
                 f"time_limit={self.time_limit}, "
                 f"time_step={self.time_step}, "
