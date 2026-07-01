@@ -1,166 +1,178 @@
-# CrowdNav++: Intention-Aware Crowd Navigation with Attention-Based Interaction Graph
+# AutoSweepNav
 
-This repository contains the implementation of **"Intention Aware Robot Crowd Navigation with Attention-Based Interaction Graph"** published at **ICRA 2023**. The work addresses safe and socially-aware robot navigation in dense, interactive crowds using graph neural networks with attention mechanisms and human trajectory prediction.
+![Python](https://img.shields.io/badge/python-3.8%2B-blue)
+![PyTorch](https://img.shields.io/badge/PyTorch-RL-orange)
+![Gym](https://img.shields.io/badge/OpenAI%20Gym-compatible-lightgrey)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Status](https://img.shields.io/badge/status-research%20prototype-yellow)
 
-**Paper & Resources:**
-- 📄 **Paper**: [ICRA 2023 Proceedings](https://sites.google.com/view/intention-aware-crowdnav/home)
-- 📝 **Preprint**: [arXiv:2203.01821](https://arxiv.org/abs/2203.01821)
-- 🎬 **Demonstrations**: [YouTube Video](https://www.youtube.com/watch?v=nxpxhF019VA)
+Autonomous sweeping and coverage navigation in dynamic human environments.
 
-**Latest Updates:**
-- 🔗 Follow-up work: [HEIGHT: Heterogeneous Interaction Graph Transformer](https://github.com/Shuijing725/CrowdNav_HEIGHT)
-- 🔄 Sim2Real transfer: [CrowdNav Sim2Real Tutorial](https://github.com/Shuijing725/CrowdNav_Sim2Real_Turtlebot)
-- 📚 Curated resources: [Awesome Robot Social Navigation](https://github.com/Shuijing725/awesome-robot-social-navigation)
+AutoSweepNav is a research extension built upon Shuijing Liu and collaborators' CrowdNav++ implementation, "Intention Aware Robot Crowd Navigation with Attention-Based Interaction Graph" (ICRA 2023). The original project provides attention-based crowd navigation with human trajectory prediction. This repository preserves that foundation while adding autonomous sweeping and coverage-oriented navigation experiments, including PID and ORCA controller support.
 
----
-
-## Overview
-
-### Problem Statement
-
-Robot navigation in crowded environments requires understanding both:
-1. **Interactions** between agents (robot and pedestrians)
-2. **Intentions** of pedestrians (where they plan to go)
-
-Existing RL-based methods often fail to model these factors explicitly, leading to poor navigation performance and socially inappropriate behaviors.
-
-### Our Solution
-
-We propose a **Graph Neural Network with Attention Mechanisms** that:
-- ✅ Captures **heterogeneous interactions** among all agents through space and time
-- ✅ Predicts **future pedestrian trajectories** to infer intentions
-- ✅ Prevents collision by avoiding predicted pedestrian paths
-- ✅ Learns navigation policies using **Model-Free Reinforcement Learning (PPO)**
-- ✅ Successfully **transfers to real-world robots** (TurtleBot 2i)
+This repository does not replace CrowdNav++ and does not claim ownership of the original work. It extends the original codebase for coverage navigation experiments in empty arenas and dynamic human environments.
 
 <p align="center">
-<img src="figures/open.png" width="450" alt="Robot navigation in dense crowd" />
+  <img src="figures/open.png" width="460" alt="Crowd navigation simulation" />
 </p>
 
-### Key Features
+## Highlights
 
-- **Attention-Based Interaction Graph**: Captures heterogeneous robot-human and human-human interactions
-- **Trajectory Prediction**: Integrates Gumbel Social Transformer (GST) for human motion forecasting
-- **Flexible Prediction Methods**: Supports inferred, ground-truth, constant-velocity, and no-prediction modes
-- **Randomized Human Behaviors**: Realistic crowd simulation with varying speeds, radii, and goals
-- **Empty Arena Mode**: Train and test with no pedestrians for baseline comparison
-- **Sweep Functionality**: Test robot navigation with controlled motion patterns
-- **Visualization & Analysis**: Built-in visualization and training curve plotting
+| Area | Capabilities |
+| --- | --- |
+| Sweeping and coverage | Autonomous area sweeping, empty arena coverage, configurable lane-based sweep goals, multi-goal sweep progression |
+| Controllers | PID controller support, ORCA-based sweeping support, classical ORCA and Social Force baselines |
+| Human environments | Dynamic pedestrians, variable human populations, randomized human attributes and goal changes |
+| Prediction | GST-based human trajectory prediction integration, constant-velocity prediction, ground-truth prediction, and no-prediction modes |
+| Research workflow | Modular Gym-style environments, PPO/SRNN crowd navigation codepath, saved experiment configs, visualization and evaluation tools |
 
----
+## Current Status
+
+Autonomous sweeping is functional. PID-based sweeping is implemented. ORCA sweeping is supported. PPO/SRNN sweeping research is still under development. Additional improvements and benchmarking are currently in progress.
+
+Improvements are actively under development, and additional navigation strategies and benchmarking results will be released in future updates.
+
+## Relationship to CrowdNav++
+
+This repository started from Shuijing's CrowdNav++ project:
+
+- Original project: [CrowdNav_Prediction_AttnGraph](https://github.com/Shuijing725/CrowdNav_Prediction_AttnGraph)
+- Paper: [Intention Aware Robot Crowd Navigation with Attention-Based Interaction Graph](https://sites.google.com/view/intention-aware-crowdnav/home)
+- Preprint: [arXiv:2203.01821](https://arxiv.org/abs/2203.01821)
+- Demonstration: [YouTube](https://www.youtube.com/watch?v=nxpxhF019VA)
+
+CrowdNav++ focuses on safe, socially aware robot navigation through dense crowds using attention-based interaction graphs, PPO, SRNN-style policy networks, and human trajectory prediction through GST.
+
+Major additions and adaptations in this repository include:
+
+- Autonomous area sweeping behavior for coverage-style navigation.
+- Empty arena sweeping experiments for controlled coverage evaluation.
+- Sweep goal generation with configurable axis, lane spacing, margins, and step size.
+- PID controller support for direct waypoint tracking.
+- ORCA-based sweeping support for collision-aware sweeping in human environments.
+- Multi-goal sweep progression that updates robot goals as the robot reaches sweep waypoints.
+- Support for evaluating sweeping in both empty and populated arenas.
+- Configuration hooks for variable human populations and dynamic human behavior.
+- Continued integration with human trajectory prediction for crowd navigation experiments.
+
+The original CrowdNav++ SRNN/PPO infrastructure remains available for crowd navigation research. Sweeping experiments in the current repository should use PID or ORCA rather than SRNN.
+
+## Sweeping Experiments
+
+Current sweeping experiments are designed to use:
+
+- `pid`: PID waypoint tracking for sweep goals.
+- `orca`: ORCA-based motion selection for sweeping in dynamic scenes.
+
+Do not use the SRNN policy for sweeping experiments. SRNN and `selfAttn_merge_srnn` remain available for crowd navigation and policy-learning experiments inherited from CrowdNav++, but sweeping is currently evaluated using PID and ORCA.
+
+Key sweeping configuration lives in `crowd_nav/configs/config.py`:
+
+```python
+robot.policy = 'orca'      # use 'orca' or 'pid' for current sweeping experiments
+robot.sweep = True
+robot.sweep_step = 2
+robot.sweep_axes = 0       # 0: x-axis sweep, 1: y-axis sweep, 'random': choose per episode
+robot.sweep_tail = 1       # show swept area during rendering
+robot.sweep_margin = robot.radius + 0.2
+robot.sweep_lane_step = robot.radius * 2
+
+sim.empty_arena = False    # True: no humans, False: humans, 'random': mix both
+sim.human_num = 10
+sim.human_num_range = 0
+```
+
+For PID sweeping, configure:
+
+```python
+robot.policy = 'pid'
+robot.ki = 0.0
+robot.kp = 1.2
+robot.kd = 0.2
+```
+
+## Architecture Overview
+
+```text
+                  +-------------------------------+
+                  | crowd_nav/configs/config.py   |
+                  | experiment and controller cfg |
+                  +---------------+---------------+
+                                  |
+                                  v
+  +-------------------+   +-----------------------+   +------------------+
+  | crowd_nav/policy  |   | crowd_sim/envs        |   | gst_updated      |
+  | PID, ORCA, SRNN   +-->| Gym simulation        |<--+ trajectory pred  |
+  +-------------------+   | sweep goal updates    |   +------------------+
+                          | dynamic humans        |
+                          +-----------+-----------+
+                                      |
+                                      v
+                          +-----------------------+
+                          | rl/                   |
+                          | PPO, networks, eval   |
+                          +-----------+-----------+
+                                      |
+                                      v
+                          +-----------------------+
+                          | trained_models/       |
+                          | checkpoints, configs  |
+                          +-----------------------+
+```
 
 ## Repository Structure
 
-```
-CrowdNav_Prediction_AttnGraph/
-├── arguments.py                      # Training/testing hyperparameter configuration
-├── train.py                          # Main training script
-├── test.py                           # Evaluation and visualization script
-├── plot.py                           # Training curve visualization
-├── collect_data.py                   # Data collection utilities
-├── environment.yml                   # Conda environment specification
-├── requirements.txt                  # Python package dependencies
-├── LICENSE                           # MIT License
-│
-├── crowd_nav/                        # Navigation policies and configurations
-│   └── configs/
-│       ├── config.py                 # Simulation, reward, and environment settings
-│       └── __init__.py
-│
-├── crowd_sim/                        # Simulation environment (OpenAI Gym compatible)
-│   ├── envs/
-│   │   ├── crowd_sim.py              # Base environment
-│   │   ├── crowd_sim_var_num.py      # Variable number of pedestrians
-│   │   ├── crowd_sim_pred.py         # With trajectory prediction
-│   │   ├── crowd_sim_pred_real_gst.py # With GST prediction
-│   │   ├── crowd_sim_var_num_collect.py
-│   │   └── utils/                    # Robot, human, action, state utilities
-│   └── ...
-│
-├── rl/                               # Reinforcement learning components
-│   ├── ppo/                          # PPO algorithm implementation
-│   ├── networks/
-│   │   ├── model.py                  # Policy network architecture
-│   │   ├── network_utils.py
-│   │   ├── storage.py                # Rollout buffer
-│   │   ├── envs.py                   # Environment wrapper
-│   │   └── ...
-│   ├── evaluation.py                 # Evaluation metrics
-│   └── ...
-│
-├── gst_updated/                      # Gumbel Social Transformer predictor (inference only)
-│   ├── results/                      # Pretrained trajectory prediction models
-│   ├── run/
-│   └── ...
-│
-├── trained_models/                   # Pretrained navigation policies
-│   ├── GST_predictor_no_rand/        # Ours (no human randomization)
-│   ├── GST_predictor_rand/           # Ours (with human randomization)
-│   ├── ORCA_no_rand/                 # ORCA baseline
-│   ├── SF_no_rand/                   # Social Force baseline
-│   └── ...
-│
-└── figures/                          # Images and visualizations
-    ├── open.png
-    ├── visual.gif
-    ├── rewards.png
-    └── losses.png
-```
-
----
+| Path | Purpose |
+| --- | --- |
+| `crowd_sim/` | OpenAI Gym-style simulation environments, robot and human dynamics, rendering, sweep goal updates, variable human population environments, and prediction-aware environments. |
+| `crowd_nav/` | Navigation policies and project configuration. Includes ORCA, Social Force, PID, SRNN policy wrappers, and `crowd_nav/configs/config.py`. |
+| `rl/` | Reinforcement learning stack inherited from CrowdNav++, including PPO, rollout storage, policy networks, vectorized environments, normalization, and evaluation. |
+| `trained_models/` | Saved checkpoints, experiment configs, logs, and evaluation outputs for pretrained or local experiments. Includes crowd navigation and sweeping experiment folders. |
+| `configs/` | Experiment configuration snapshots are saved under model folders such as `trained_models/<experiment>/configs/`. The live source configuration is `crowd_nav/configs/`. |
+| `gst_updated/` | Gumbel Social Transformer trajectory prediction code and pretrained prediction assets used by prediction-aware environments. |
+| `figures/` | Images and animations used in documentation and visualization examples. |
+| `train.py` | PPO training entry point for learned policy experiments. |
+| `test.py` | Evaluation and visualization entry point for PID, ORCA, Social Force, and learned policies. |
+| `arguments.py` | Training and evaluation command-line defaults, including output directory, environment name, PPO settings, and network dimensions. |
 
 ## Installation
 
 ### Requirements
 
-- **Python**: 3.8+ (tested with 3.8 and 3.10)
-- **OS**: Linux (Ubuntu 18.04+)
-- **GPU**: Optional but recommended (CUDA-capable device)
+- Linux is recommended.
+- Python 3.8 or newer is recommended.
+- CUDA-capable GPU is optional for learned policy training and trajectory prediction experiments.
+- ORCA experiments may require Python-RVO2.
 
-### Step 1: Clone Repository
+### 1. Clone
 
 ```bash
-git clone https://github.com/Shuijing725/CrowdNav_Prediction_AttnGraph.git
+git clone <this-repository-url>
+cd AutoSweepNav
+```
+
+If you are working from the original directory name, use that directory instead:
+
+```bash
 cd CrowdNav_Prediction_AttnGraph
 ```
 
-### Step 2: Setup Conda Environment
+### 2. Create the Environment
 
 ```bash
 conda env create -f environment.yml
 conda activate crowdnav
 ```
 
-This installs Python 3.10, PyTorch 1.12.1, and base dependencies.
-
-### Step 3: Install Additional Dependencies
+Then install the Python package requirements:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-**Required packages:**
-- `numpy==1.23.5` – Numerical computing
-- `pandas==1.5.2` – Data handling
-- `gym==0.15.7` – Environment interface
-- `tensorflow-gpu==2.11.0` – GPU support (CPU alternative available)
-- `matplotlib==3.6.2` – Visualization
-- `Cython` – Fast Python extensions
+### 3. Optional ORCA Dependency
 
-### Step 4: Install OpenAI Baselines (Optional)
-
-Only needed if training from scratch. Provides PPO algorithm utilities:
-
-```bash
-git clone https://github.com/openai/baselines.git
-cd baselines
-pip install -e .
-cd ..
-```
-
-### Step 5: Install Python-RVO2 (Optional)
-
-For ORCA-based pedestrian dynamics:
+For ORCA-based policies, install Python-RVO2 if it is not already available:
 
 ```bash
 git clone https://github.com/sybrenstuvel/Python-RVO2.git
@@ -169,319 +181,170 @@ pip install -e .
 cd ..
 ```
 
-### Step 6: Verify Installation
+### 4. Verify
 
 ```bash
-python -c "import torch; print(f'PyTorch {torch.__version__}'); print(f'CUDA available: {torch.cuda.is_available()}')"
+python -c "import torch; print(torch.__version__); print(torch.cuda.is_available())"
 ```
-
----
 
 ## Quick Start
 
-### Training a Navigation Policy
+### Evaluate ORCA Sweeping
 
-**1. Configure the environment** (`crowd_nav/configs/config.py`):
-
-```python
-# Set prediction method
-sim.predict_method = 'inferred'  # Options: 'inferred', 'const_vel', 'truth', 'none'
-
-# Enable human randomization for realistic scenarios
-env.randomize_attributes = True
-humans.random_goal_changing = False
-
-# Choose arena size
-sim.human_num = 5
-sim.empty_arena = 'random'  # 'random', True (empty), or False (crowded)
-```
-
-**2. Configure training** (`arguments.py`):
+Set the live configuration in `crowd_nav/configs/config.py`:
 
 ```python
-parser.add_argument('--output_dir', type=str, default='trained_models/my_model')
-parser.add_argument('--num-processes', type=int, default=4)  # Parallel environments
-parser.add_argument('--num-steps', type=int, default=2048)   # Rollout length
+robot.policy = 'orca'
+robot.sweep = True
+sim.empty_arena = False      # or True for empty-arena coverage
 ```
 
-**3. Run training**:
+Run:
+
+```bash
+python test.py --model_dir trained_models/sweep_empty_arena_x-axis --test_model 05000.pt --visualize
+```
+
+For ORCA and PID, `test.py` does not load a neural policy when `robot.policy` is one of `orca`, `social_force`, or `pid`; the checkpoint argument is kept for compatibility with the existing evaluation interface.
+
+### Evaluate PID Sweeping
+
+Set:
+
+```python
+robot.policy = 'pid'
+robot.sweep = True
+robot.kp = 1.2
+robot.ki = 0.0
+robot.kd = 0.2
+```
+
+Run:
+
+```bash
+python test.py --model_dir trained_models/sweep_empty_arena_x-axis --visualize
+```
+
+### Train a Learned Crowd Navigation Policy
+
+SRNN/PPO training remains available for crowd navigation experiments inherited from CrowdNav++:
 
 ```bash
 python train.py
 ```
 
-**Output**: Checkpoints and configs saved to `trained_models/my_model/`
-
-### Testing & Visualization
-
-**1. Configure test parameters** (`test.py`, lines 20-33):
-
-```python
-parser.add_argument('--model_dir', type=str, default='trained_models/GST_predictor_rand')
-parser.add_argument('--visualize', default=True, action='store_true')
-parser.add_argument('--test_case', type=int, default=-1)  # -1 for 500 different cases
-parser.add_argument('--test_model', type=str, default='41665.pt')
-```
-
-**2. Run evaluation**:
+Training outputs are written to the directory configured by `--output_dir` in `arguments.py` or passed on the command line:
 
 ```bash
-python test.py
+python train.py --output_dir trained_models/my_experiment
 ```
 
-**Output**: Results logged to `trained_models/<model_dir>/test/` and displayed on terminal.
-
-**Example visualization**:
-<img src="figures/visual.gif" width="420" alt="Navigation visualization in crowd" />
-
-### Plotting Training Curves
-
-```bash
-python plot.py
-```
-
-Generates plots for:
-- Episode rewards over time
-- Training losses
-
-<img src="figures/rewards.png" width="370" alt="Training rewards" /> 
-<img src="figures/losses.png" width="370" alt="Training losses" />
-
----
+Use SRNN-based policies for crowd navigation research, not for the current sweeping experiments.
 
 ## Configuration Guide
 
-### Simulation Configuration (`crowd_nav/configs/config.py`)
+### Sweeping and Robot Control
 
-#### Environment Settings
+| Parameter | Description |
+| --- | --- |
+| `robot.policy` | Robot controller or learned policy. Use `pid` or `orca` for current sweeping experiments. |
+| `robot.sweep` | Enables autonomous sweep goal progression. |
+| `robot.sweep_step` | Goal advancement distance along the active sweep direction. |
+| `robot.sweep_axes` | Sweep orientation: `0` for x-axis, `1` for y-axis, or `'random'`. |
+| `robot.sweep_margin` | Boundary margin used to keep the robot inside the arena. |
+| `robot.sweep_lane_step` | Spacing between adjacent sweep lanes. |
+| `robot.sweep_tail` | Enables rendered sweep trace. |
+| `robot.kp`, `robot.ki`, `robot.kd` | PID gains used when `robot.policy = 'pid'`. |
 
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `env.time_limit` | 50 | Max timesteps per episode |
-| `env.time_step` | 0.25 | Simulation time step (seconds) |
-| `env.randomize_attributes` | True | Randomize human radius and velocity |
-| `env.val_size` | 100 | Validation episodes |
-| `env.test_size` | 500 | Test episodes |
+### Arena and Humans
 
-#### Simulation Settings
+| Parameter | Description |
+| --- | --- |
+| `sim.arena_width`, `sim.arena_height` | Arena dimensions used by the simulator and sweep generator. |
+| `sim.empty_arena` | `True` for empty coverage, `False` for human environments, `'random'` for mixed evaluation. |
+| `sim.human_num` | Nominal number of humans. Keep this at least `1`; use `sim.empty_arena = True` for empty arenas. |
+| `sim.human_num_range` | Variation around the nominal number of humans in variable-population environments. |
+| `env.randomize_attributes` | Enables randomized human radius and preferred speed. |
+| `humans.random_goal_changing` | Allows human goals to change before reaching the current goal. |
+| `humans.end_goal_changing` | Allows new human goals after humans reach their current goals. |
 
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `sim.arena_width` | 10 | Arena width (meters) |
-| `sim.arena_height` | 8 | Arena height (meters) |
-| `sim.human_num` | 5 | Number of pedestrians |
-| `sim.human_num_range` | 3 | Variation in pedestrian count |
-| `sim.empty_arena` | 'random' | 'random', True (empty), False (crowded) |
-| `sim.predict_method` | 'inferred' | Prediction: 'inferred', 'const_vel', 'truth', 'none' |
-| `sim.predict_steps` | 5 | Future timesteps to predict |
+### Prediction Modes
 
-#### Human Configuration
+| Mode | Description |
+| --- | --- |
+| `inferred` | Uses the GST trajectory prediction model in `gst_updated/`. |
+| `const_vel` | Uses constant-velocity prediction. |
+| `truth` | Uses ground-truth future trajectories where available. |
+| `none` | Disables trajectory prediction. |
 
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `humans.policy` | 'orca' | Pedestrian policy: 'orca', 'social_force' |
-| `humans.v_pref` | 1.0 | Preferred velocity (m/s) |
-| `humans.radius` | 0.3 | Pedestrian radius (meters) |
-| `humans.FOV` | 2.0 | Field of view (× π radians) |
-| `humans.random_goal_changing` | False | Random goal changes |
-| `humans.end_goal_changing` | False | Goal changes upon arrival |
+When `sim.predict_method = 'inferred'`, `env.use_wrapper` must be enabled. The current configuration handles this automatically.
 
-#### Reward Configuration
+## Evaluation
 
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `reward.success_reward` | 10 | Success bonus |
-| `reward.collision_penalty` | -20 | Collision penalty |
-| `reward.discomfort_dist` | 0.25 | Minimum comfort distance (meters) |
-| `reward.discomfort_penalty_factor` | 10 | Discomfort penalty multiplier |
-| `reward.gamma` | 0.99 | Discount factor |
-
-### Network Configuration (`arguments.py`)
-
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `--env_name` | — | Environment: `CrowdSimPredRealGST-v0`, `CrowdSimPred-v0`, `CrowdSimVarNum-v0` |
-| `--use_self_attn` | True | Enable human-human attention |
-| `--use_hr_attn` | True | Enable robot-human attention |
-| `--num_processes` | 4 | Parallel environment instances |
-| `--num_steps` | 2048 | Rollout buffer length |
-| `--num_mini_batch` | 32 | PPO mini-batch size |
-| `--lr` | 2.5e-4 | Learning rate |
-| `--cuda_deterministic` | False | Deterministic CUDA (slower) |
-| `--seed` | 425 | Random seed |
-
----
-
-## Pretrained Models
-
-### Available Models
-
-| Method | Location | Checkpoint | Description |
-|--------|----------|------------|-------------|
-| **Ours (No Randomization)** | `trained_models/GST_predictor_no_rand` | `41200.pt` | Best performance with static humans |
-| **Ours (With Randomization)** | `trained_models/GST_predictor_rand` | `41665.pt` | Robust to dynamic human behaviors |
-| **ORCA Baseline** | `trained_models/ORCA_no_rand` | `00000.pt` | Classical collision avoidance |
-| **Social Force** | `trained_models/SF_no_rand` | `00000.pt` | Physics-based pedestrian model |
-
-### Download & Test
+Use `test.py` for evaluation and visualization:
 
 ```bash
-# Test our model (with prediction)
 python test.py \
-  --model_dir trained_models/GST_predictor_rand \
-  --test_model 41665.pt \
-  --visualize True
-
-# Compare with baseline (ORCA)
-python test.py \
-  --model_dir trained_models/ORCA_no_rand \
-  --test_model 00000.pt
+  --model_dir trained_models/sweep_empty_arena_x-axis \
+  --test_model 05000.pt \
+  --visualize
 ```
 
----
+Useful options:
 
-## Advanced Features
+| Option | Description |
+| --- | --- |
+| `--model_dir` | Experiment directory containing configs, checkpoints, and evaluation logs. |
+| `--test_model` | Checkpoint filename for learned policies. Kept for interface compatibility with PID/ORCA. |
+| `--test_case` | `-1` evaluates the configured test set; nonnegative values repeat a specific case. |
+| `--visualize` | Opens a Matplotlib visualization. |
+| `--render_traj` | Saves trajectory information when enabled. |
+| `--save_slides` | Saves rendered frames for slideshow-style inspection. |
 
-### 1. Empty Arena Mode
+Evaluation logs are written under the selected `trained_models/<experiment>/test/` directory.
 
-Train and test in environments with no pedestrians for baseline comparisons:
+## Pretrained and Saved Experiments
 
-```python
-# In crowd_nav/configs/config.py
-sim.empty_arena = True   # Disable pedestrians
-```
+The `trained_models/` directory contains saved experiments from the inherited CrowdNav++ workflow and local sweeping experiments.
 
-### 2. Human Randomization
+| Directory | Description |
+| --- | --- |
+| `trained_models/GST_predictor_rand/` | Crowd navigation policy with GST prediction and randomized human behavior. |
+| `trained_models/GST_predictor_non_rand/` | Crowd navigation policy with GST prediction without randomized human behavior. |
+| `trained_models/ORCA_no_rand/` | ORCA baseline experiment. |
+| `trained_models/SF_no_rand/` | Social Force baseline experiment. |
+| `trained_models/sweep_empty_arena/` | Saved sweeping experiment in an empty arena. |
+| `trained_models/sweep_empty_arena_x-axis/` | Saved x-axis sweeping experiment. |
 
-Add variability to pedestrian behaviors:
+Check the `configs/` subdirectory inside each experiment before comparing results, because the saved configuration defines the environment and policy used for that run.
 
-```python
-# In crowd_nav/configs/config.py
-env.randomize_attributes = True      # Random radius and velocity
-humans.random_goal_changing = True   # Random goal changes
-```
+## Roadmap
 
-### 3. Trajectory Prediction Methods
+- Expand benchmarking for empty and human-populated sweeping scenarios.
+- Improve coverage metrics and reporting.
+- Continue PPO/SRNN-based sweeping research.
+- Add more motion planning and coverage planning baselines.
+- Improve reproducibility scripts for sweeping experiments.
+- Document recommended parameter sets for PID and ORCA sweeping.
+- Add richer visualizations for sweep coverage and missed areas.
 
-Choose how to predict human motion:
+## Contributing
 
-```python
-# In crowd_nav/configs/config.py
-sim.predict_method = 'inferred'  # Learned GST model
-sim.predict_method = 'const_vel' # Constant velocity
-sim.predict_method = 'truth'     # Ground truth (oracle)
-sim.predict_method = 'none'      # No prediction
-```
+Pull requests are welcome, especially for:
 
-**Note**: To use `'inferred'`, a trained GST model must be in `gst_updated/results/`. Models are provided.
+- Coverage planning.
+- Motion planning.
+- Navigation algorithms.
+- Human-aware robotics.
+- Reinforcement learning.
+- Robot control.
+- Benchmarking and reproducibility.
 
-### 4. Sweep Functionality
-
-Test robot with controlled linear motion:
-
-```python
-# In crowd_nav/configs/config.py
-robot.sweep = True
-robot.sweep_start = -5
-robot.sweep_stop = 5
-robot.sweep_step = 0.5
-robot.sweep_dir = 'x'  # or 'y'
-robot.sweep_axes = 0   # 0 for x-axis, 1 for y-axis
-```
-
-### 5. Record Trajectories
-
-Capture robot and human states for system identification:
-
-```python
-# In crowd_nav/configs/config.py
-env.record = True
-```
-
-Outputs saved to training directory for analysis.
-
-### 6. Advanced Visualization
-
-Save episode frames for slideshow generation:
-
-```python
-# In test.py
-test_args.save_slides = True
-test_args.visualize = True
-```
-
-Frames saved to `trained_models/<model_dir>/test/`
-
-**Note**: This significantly slows testing. Refer to the [save_slides branch](https://github.com/Shuijing725/CrowdNav_Prediction_AttnGraph/tree/save_slides) for details.
-
----
-
-## Architecture Details
-
-### Attention-Based Interaction Graph
-
-**Key Components:**
-
-1. **Human-Human Attention** (`use_self_attn=True`)
-   - Models interactions between pedestrians
-   - Captures social forces and group dynamics
-
-2. **Robot-Human Attention** (`use_hr_attn=True`)
-   - Models robot awareness of each pedestrian
-   - Enables socially-aware planning
-
-3. **Trajectory Prediction**
-   - Predicts `predict_steps` future frames
-   - Prevents collisions with intended paths
-
-### Network Architecture
-
-- **Graph Neural Network**: Heterogeneous edges for different interaction types
-- **Temporal Modeling**: LSTM/RNN cells for sequential decision making
-- **Attention Mechanism**: Soft attention over agent interactions
-- **Policy Network**: Actor-Critic PPO for RL
-
----
-
-## Known Limitations
-
-1. **Python & OS Support**: Tested on Ubuntu with Python 3.6+ and 3.8+. Other OS/versions untested.
-
-2. **Hyperparameter Sensitivity**: Performance varies with hyperparameters and random seeds. Manual tuning may be needed to match paper results.
-
-3. **Trajectory Prediction**: GST model must be trained separately. See [gst repo](https://github.com/tedhuang96/gst).
-
-4. **Sim2Real Gap**: Real-world deployment requires domain adaptation. Uncertainties in real environments may affect performance. See [Sim2Real tutorial](https://github.com/Shuijing725/CrowdNav_Sim2Real_Turtlebot) for guidance.
-
----
-
-## Future Work & Extensions
-
-- Multi-robot scenarios
-- Hierarchical navigation with semantic understanding
-- Integration with vision-based perception
-- Deployment on additional robot platforms
-- Adaptive prediction model selection
-
----
-
-## Sim2Real Transfer
-
-We provide a complete **Sim2Real transfer tutorial**:
-
-📖 [CrowdNav Sim2Real Tutorial](https://github.com/Shuijing725/CrowdNav_Sim2Real_Turtlebot)
-
-This includes:
-- System identification for TurtleBot 2i
-- Domain adaptation strategies
-- Real-world deployment guidelines
-- Troubleshooting common issues
-
----
+Please keep contributions scoped, document new configuration options, and include evaluation notes or tests where practical. If your change modifies inherited CrowdNav++ behavior, describe whether it affects crowd navigation, sweeping, or both.
 
 ## Citation
 
-If you use this code or paper in your research, please cite:
+If you use the original CrowdNav++ methods, models, or code inherited in this repository, please cite the original work:
 
 ```bibtex
 @inproceedings{liu2022intention,
@@ -491,7 +354,11 @@ If you use this code or paper in your research, please cite:
   year={2023},
   pages={12015--12021}
 }
+```
 
+The SRNN crowd navigation foundation is also associated with:
+
+```bibtex
 @inproceedings{liu2020decentralized,
   title={Decentralized Structural-RNN for Robot Crowd Navigation with Deep Reinforcement Learning},
   author={Liu, Shuijing and Chang, Peixin and Liang, Weihang and Chakraborty, Neeloy and Driggs-Campbell, Katherine},
@@ -501,52 +368,30 @@ If you use this code or paper in your research, please cite:
 }
 ```
 
----
+If you use this extension for autonomous sweeping or coverage navigation experiments, please cite this repository as an extension:
 
-## Related Works
+```bibtex
+@misc{autosweepnav,
+  title = {AutoSweepNav: Autonomous Sweeping and Coverage Navigation in Dynamic Human Environments},
+  howpublished = {\url{<repository-url>}},
+  note = {Extension of Shuijing Liu et al.'s CrowdNav++ implementation for autonomous sweeping and coverage navigation},
+  year = {2026}
+}
+```
 
-This repository builds on:
+Replace `<repository-url>` with the public URL of this repository when citing.
 
-1. **Decentralized Structural-RNN** for crowd navigation  
-   [Liu et al., ICRA 2021] | [GitHub](https://github.com/Shuijing725/CrowdNav_DSRNN)
+## Acknowledgements
 
-2. **Gumbel Social Transformer** for trajectory prediction  
-   [Huang et al., RA-L 2022] | [GitHub](https://github.com/tedhuang96/gst)
+This repository builds on the work of Shuijing Liu and collaborators, whose CrowdNav++ implementation and related papers provide the foundation for the crowd navigation and trajectory prediction workflow used here.
 
----
+Thanks to:
 
-## Contributors
-
-**Authors:**
-- [Shuijing Liu](https://github.com/Shuijing725)
-
-**Contributors:**
-- [Peixin Chang](https://github.com/PeixinC)
-- [Zhe Huang](https://github.com/tedhuang96)
-- [Neeloy Chakraborty](https://github.com/TheNeeloy)
-
----
+- Shuijing and collaborators for the original CrowdNav++ project.
+- The CrowdNav++ research codebase and papers.
+- The GST authors for the trajectory prediction model integrated into the original workflow.
+- The open-source robotics community for tools, baselines, and shared research infrastructure.
 
 ## License
 
-This project is licensed under the **MIT License** - see [LICENSE](LICENSE) for details.
-
----
-
-## Contact & Support
-
-- 📧 **Issues**: Please open a [GitHub Issue](https://github.com/Shuijing725/CrowdNav_Prediction_AttnGraph/issues)
-- 🔧 **Pull Requests**: Contributions welcome!
-- ❓ **Questions**: Feel free to ask in Issues
-
----
-
-## Acknowledgments
-
-- ICRA reviewers for constructive feedback
-- University collaborators for simulation infrastructure
-- Open-source community for PyTorch, OpenAI Gym, and other tools
-
----
-
-**Last Updated**: June 2024 | **PyTorch Version**: 1.12.1 | **Python**: 3.8+
+This repository follows the included `LICENSE`. The inherited CrowdNav++ components remain credited to their original authors.
