@@ -1,4 +1,4 @@
-# AutoSweepNav
+# AutoSweepCrowdNav
 
 ![Python](https://img.shields.io/badge/python-3.8%2B-blue)
 ![PyTorch](https://img.shields.io/badge/PyTorch-1.12.1-orange)
@@ -6,7 +6,7 @@
 ![Status](https://img.shields.io/badge/status-research%20extension-yellow)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-Autonomous sweeping and coverage-oriented navigation experiments built on top of Shuijing Liu and collaborators' CrowdNav++ implementation.
+Autonomous sweeping and coverage-oriented crowd navigation experiments built on top of Shuijing Liu and collaborators' CrowdNav++ implementation.
 
 This repository started from [Shuijing725/CrowdNav_Prediction_AttnGraph](https://github.com/Shuijing725/CrowdNav_Prediction_AttnGraph), the implementation of **"Intention Aware Robot Crowd Navigation with Attention-Based Interaction Graph"** from ICRA 2023. The original project remains the foundation for the crowd navigation, PPO/SRNN, and GST trajectory prediction components. This fork extends that framework with sweeping, rectangular simulation geometry, ellipse based crowd generation, PID control, ORCA-based sweeping, empty-arena experiments, and coverage-oriented evaluation hooks.
 
