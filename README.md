@@ -25,10 +25,10 @@ This repository keeps that foundation and adds experimental sweeping functionali
 | Area | Original CrowdNav++ | This Extension |
 | --- | --- | --- |
 | Main task | Crowd navigation to a single goal | Multi-goal sweeping and coverage-oriented navigation |
-| Arena model | Circular/square-style assumptions | Rectangular arena dimensions and ellipse-based human generation |
+| Arena model | square-style assumptions | Rectangular arena dimensions and ellipse-based human generation |
 | Robot policy default | `selfAttn_merge_srnn` | `orca` for current sweeping experiments |
 | Controllers | ORCA, Social Force, SRNN policies | Adds PID and uses ORCA/PID for sweeping |
-| Human generation | Circle crossing | Ellipse crossing, optional boundary starts, experimental groups |
+| Human generation | Circle crossing | Ellipse crossing, controlled entry/exit hooks, optional boundary starts, experimental groups |
 | Empty arena | Not a primary experiment mode | Empty arena mode with dummy human compatibility |
 | Rendering | Crowd navigation visualization | Sweep trace, rectangular bounds, group labels |
 | Evaluation | Aggregate success/collision/timeout | Adds empty-vs-crowded episode reporting |
@@ -37,9 +37,9 @@ SRNN/PPO remains available for inherited crowd navigation experiments. Current s
 
 ## Current Status
 
-Autonomous sweeping is functional. PID-based sweeping is implemented. ORCA sweeping is supported. Empty-arena logic, rectangular arena support, ellipse crowd generation, and group spawning are present in the codebase.
+Autonomous sweeping is functional. PID-based sweeping is implemented. ORCA sweeping is supported. Empty-arena logic, rectangular arena support, ellipse crowd generation, controlled entry/exit hooks, and group spawning are present in the codebase.
 
-PPO/SRNN sweeping research is still under development. Coverage metrics, coverage-specific rewards, group behavior improvements, and broader benchmarking are in progress.
+PPO/SRNN sweeping research is still under development. Coverage metrics, coverage-specific rewards, human group behavior improvements, controlled entry/exit refinement, and broader benchmarking are in progress.
 
 Improvements are actively under development, and additional navigation strategies and benchmarking results will be released in future updates.
 
@@ -51,15 +51,14 @@ Improvements are actively under development, and additional navigation strategie
 | Empty arena mode | Implemented | Uses a dummy human slot to preserve observation tensor compatibility. |
 | Rectangular arena | Implemented | Adds `arena_width` and `arena_height`; active paths use rectangular bounds. |
 | Ellipse crowd generation | Implemented | Replaces circle crossing with ellipse crossing in active environment paths. |
-| Coverage path generation | Partially implemented | Implemented as lawnmower-style sweep waypoints; no full coverage metric yet. |
 | Multi-goal sweeping | Implemented | Reaching intermediate goals updates the next sweep goal instead of ending immediately. |
 | Sweep stop condition | Implemented | Episodes end when the computed final sweep waypoint is reached. |
 | PID controller | Implemented | Added as a non-trainable policy in `crowd_nav/policy/pid.py`. |
 | ORCA sweeping | Implemented | ORCA follows generated sweep goals through the existing policy interface. |
 | Variable human populations | Inherited and modified | Add/remove logic updated for max-human and new generation behavior. |
-| Group spawning | Experimental | Group members can be generated and labeled; coordinated group behavior is unfinished. |
-| Human trajectory prediction | Inherited and adjusted | GST path remains; prediction horizon is configured to 10 steps. |
-| Sweep visualization | Implemented with caveat | Sweep tail is drawn, but one render path contains a debug typo noted below. |
+| Controlled entry/exit hooks | Experimental | Boundary/gate-style spawning and dynamic population updates support controlled crowd flow experiments. |
+| Human group behavior | In progress | Group members can be generated and labeled; coordinated group behavior is unfinished. |
+| Sweep visualization | Implemented with caveat | Sweep tail is drawn; inspect render debug code before relying on batch rendering. |
 | Empty/crowded evaluation split | Implemented | Evaluation reports separate counts and rates for empty and crowded episodes. |
 
 ## Sweeping Experiments
@@ -252,9 +251,9 @@ Use learned SRNN-style policies for crowd navigation research unless you are exp
 | --- | --- |
 | `sim.arena_width`, `sim.arena_height` | Rectangular arena dimensions. |
 | `sim.ellipse_a`, `sim.ellipse_b` | Ellipse radii used for human crossing generation. |
-| `sim.start_at_boundary` | Optional boundary/gate-style human spawning. |
+| `sim.start_at_boundary` | Optional boundary/gate-style human spawning for controlled entry/exit experiments. |
 | `sim.empty_arena` | `True`, `False`, or `'random'` for empty/crowded experiments. |
-| `sim.group` | Enables experimental group spawning. |
+| `sim.group` | Enables in-progress human group behavior experiments. |
 | `sim.group_size` | Number of nearby humans to spawn in a group. |
 
 ### New Robot Settings
@@ -304,8 +303,9 @@ The comparison against upstream CrowdNav++ identified several important caveats:
 
 - Coverage is currently represented by generated sweep waypoints and sweep-tail visualization. A complete coverage metric or coverage-specific reward is not yet implemented.
 - `reward.step_penalty` exists in config but is not fully applied in the main reward path.
-- Group behavior is experimental: spawning and labels exist, but coordinated group behavior is unfinished.
-- One rendering path in `crowd_sim/envs/crowd_sim_var_num.py` contains a debug typo, `import pbd; pbd.set_trace()`, which should be removed before relying on that renderer.
+- Human group behavior is in progress: spawning and labels exist, but coordinated group behavior is unfinished.
+- Controlled entry/exit is experimental and currently represented through boundary/gate-style spawning and dynamic population changes.
+- One rendering path in `crowd_sim/envs/crowd_sim_var_num.py` has carried debug breakpoint code around sweep rendering. Keep that code removed/commented before relying on visualization runs.
 - `test.py` currently uses the live config from `crowd_nav/configs/config.py`; saved experiment config loading is commented out.
 - `sim.human_num` should remain at least `1`; use `sim.empty_arena = True` for empty arenas.
 
@@ -313,7 +313,8 @@ The comparison against upstream CrowdNav++ identified several important caveats:
 
 The following features are present, partial, or planned for further development:
 
-- Group behaviour improvements.
+- Human group behaviour improvements.
+- Controlled entry and exit improvements.
 - Empty arena sweeping benchmarks.
 - Rectangle arena polishing and validation.
 - Ellipse crowd generation validation.

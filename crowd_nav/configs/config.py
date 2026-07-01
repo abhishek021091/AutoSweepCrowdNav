@@ -54,7 +54,7 @@ class Config(object):
     sim.group_size = 2
     sim.human_num = 10  #Don't put this value less than 1 just make self.empty arena True for empty arena, otherwise it will cause error in the code selfAttn_srnn_temp_node.py
     sim.human_num_range = 0
-    sim.predict_steps = 10
+    sim.predict_steps = 5
     # 'const_vel': constant velocity model,
     # 'truth': ground truth future traj (with info in robot's fov)
     # 'inferred': inferred future traj from GST network
