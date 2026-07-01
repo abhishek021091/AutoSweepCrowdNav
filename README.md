@@ -1,178 +1,157 @@
 # AutoSweepNav
 
 ![Python](https://img.shields.io/badge/python-3.8%2B-blue)
-![PyTorch](https://img.shields.io/badge/PyTorch-RL-orange)
+![PyTorch](https://img.shields.io/badge/PyTorch-1.12.1-orange)
 ![Gym](https://img.shields.io/badge/OpenAI%20Gym-compatible-lightgrey)
+![Status](https://img.shields.io/badge/status-research%20extension-yellow)
 ![License](https://img.shields.io/badge/license-MIT-green)
-![Status](https://img.shields.io/badge/status-research%20prototype-yellow)
 
-Autonomous sweeping and coverage navigation in dynamic human environments.
+Autonomous sweeping and coverage-oriented navigation experiments built on top of Shuijing Liu and collaborators' CrowdNav++ implementation.
 
-AutoSweepNav is a research extension built upon Shuijing Liu and collaborators' CrowdNav++ implementation, "Intention Aware Robot Crowd Navigation with Attention-Based Interaction Graph" (ICRA 2023). The original project provides attention-based crowd navigation with human trajectory prediction. This repository preserves that foundation while adding autonomous sweeping and coverage-oriented navigation experiments, including PID and ORCA controller support.
+This repository started from [Shuijing725/CrowdNav_Prediction_AttnGraph](https://github.com/Shuijing725/CrowdNav_Prediction_AttnGraph), the implementation of **"Intention Aware Robot Crowd Navigation with Attention-Based Interaction Graph"** from ICRA 2023. The original project remains the foundation for the crowd navigation, PPO/SRNN, and GST trajectory prediction components. This fork extends that framework with sweeping, rectangular simulation geometry, ellipse based crowd generation, PID control, ORCA-based sweeping, empty-arena experiments, and coverage-oriented evaluation hooks.
 
-This repository does not replace CrowdNav++ and does not claim ownership of the original work. It extends the original codebase for coverage navigation experiments in empty arenas and dynamic human environments.
+This project does not replace CrowdNav++ and does not claim ownership of the original work. It is a research extension for autonomous sweeping in empty and human-populated environments.
 
 <p align="center">
   <img src="figures/open.png" width="460" alt="Crowd navigation simulation" />
 </p>
 
-## Highlights
+## Relationship to CrowdNav++
 
-| Area | Capabilities |
-| --- | --- |
-| Sweeping and coverage | Autonomous area sweeping, empty arena coverage, configurable lane-based sweep goals, multi-goal sweep progression |
-| Controllers | PID controller support, ORCA-based sweeping support, classical ORCA and Social Force baselines |
-| Human environments | Dynamic pedestrians, variable human populations, randomized human attributes and goal changes |
-| Prediction | GST-based human trajectory prediction integration, constant-velocity prediction, ground-truth prediction, and no-prediction modes |
-| Research workflow | Modular Gym-style environments, PPO/SRNN crowd navigation codepath, saved experiment configs, visualization and evaluation tools |
+CrowdNav++ provides the original simulation, attention-based policy architecture, PPO training pipeline, human trajectory prediction integration, and social navigation evaluation workflow.
+
+This repository keeps that foundation and adds experimental sweeping functionality:
+
+| Area | Original CrowdNav++ | This Extension |
+| --- | --- | --- |
+| Main task | Crowd navigation to a single goal | Multi-goal sweeping and coverage-oriented navigation |
+| Arena model | Circular/square-style assumptions | Rectangular arena dimensions and ellipse-based human generation |
+| Robot policy default | `selfAttn_merge_srnn` | `orca` for current sweeping experiments |
+| Controllers | ORCA, Social Force, SRNN policies | Adds PID and uses ORCA/PID for sweeping |
+| Human generation | Circle crossing | Ellipse crossing, optional boundary starts, experimental groups |
+| Empty arena | Not a primary experiment mode | Empty arena mode with dummy human compatibility |
+| Rendering | Crowd navigation visualization | Sweep trace, rectangular bounds, group labels |
+| Evaluation | Aggregate success/collision/timeout | Adds empty-vs-crowded episode reporting |
+
+SRNN/PPO remains available for inherited crowd navigation experiments. Current sweeping experiments are designed around **PID** and **ORCA**, not SRNN.
 
 ## Current Status
 
-Autonomous sweeping is functional. PID-based sweeping is implemented. ORCA sweeping is supported. PPO/SRNN sweeping research is still under development. Additional improvements and benchmarking are currently in progress.
+Autonomous sweeping is functional. PID-based sweeping is implemented. ORCA sweeping is supported. Empty-arena logic, rectangular arena support, ellipse crowd generation, and group spawning are present in the codebase.
+
+PPO/SRNN sweeping research is still under development. Coverage metrics, coverage-specific rewards, group behavior improvements, and broader benchmarking are in progress.
 
 Improvements are actively under development, and additional navigation strategies and benchmarking results will be released in future updates.
 
-## Relationship to CrowdNav++
+## Implemented Features
 
-This repository started from Shuijing's CrowdNav++ project:
-
-- Original project: [CrowdNav_Prediction_AttnGraph](https://github.com/Shuijing725/CrowdNav_Prediction_AttnGraph)
-- Paper: [Intention Aware Robot Crowd Navigation with Attention-Based Interaction Graph](https://sites.google.com/view/intention-aware-crowdnav/home)
-- Preprint: [arXiv:2203.01821](https://arxiv.org/abs/2203.01821)
-- Demonstration: [YouTube](https://www.youtube.com/watch?v=nxpxhF019VA)
-
-CrowdNav++ focuses on safe, socially aware robot navigation through dense crowds using attention-based interaction graphs, PPO, SRNN-style policy networks, and human trajectory prediction through GST.
-
-Major additions and adaptations in this repository include:
-
-- Autonomous area sweeping behavior for coverage-style navigation.
-- Empty arena sweeping experiments for controlled coverage evaluation.
-- Sweep goal generation with configurable axis, lane spacing, margins, and step size.
-- PID controller support for direct waypoint tracking.
-- ORCA-based sweeping support for collision-aware sweeping in human environments.
-- Multi-goal sweep progression that updates robot goals as the robot reaches sweep waypoints.
-- Support for evaluating sweeping in both empty and populated arenas.
-- Configuration hooks for variable human populations and dynamic human behavior.
-- Continued integration with human trajectory prediction for crowd navigation experiments.
-
-The original CrowdNav++ SRNN/PPO infrastructure remains available for crowd navigation research. Sweeping experiments in the current repository should use PID or ORCA rather than SRNN.
+| Feature | Status | Notes |
+| --- | --- | --- |
+| Autonomous area sweeping | Implemented | Sweep waypoints are generated and updated during an episode. |
+| Empty arena mode | Implemented | Uses a dummy human slot to preserve observation tensor compatibility. |
+| Rectangular arena | Implemented | Adds `arena_width` and `arena_height`; active paths use rectangular bounds. |
+| Ellipse crowd generation | Implemented | Replaces circle crossing with ellipse crossing in active environment paths. |
+| Coverage path generation | Partially implemented | Implemented as lawnmower-style sweep waypoints; no full coverage metric yet. |
+| Multi-goal sweeping | Implemented | Reaching intermediate goals updates the next sweep goal instead of ending immediately. |
+| Sweep stop condition | Implemented | Episodes end when the computed final sweep waypoint is reached. |
+| PID controller | Implemented | Added as a non-trainable policy in `crowd_nav/policy/pid.py`. |
+| ORCA sweeping | Implemented | ORCA follows generated sweep goals through the existing policy interface. |
+| Variable human populations | Inherited and modified | Add/remove logic updated for max-human and new generation behavior. |
+| Group spawning | Experimental | Group members can be generated and labeled; coordinated group behavior is unfinished. |
+| Human trajectory prediction | Inherited and adjusted | GST path remains; prediction horizon is configured to 10 steps. |
+| Sweep visualization | Implemented with caveat | Sweep tail is drawn, but one render path contains a debug typo noted below. |
+| Empty/crowded evaluation split | Implemented | Evaluation reports separate counts and rates for empty and crowded episodes. |
 
 ## Sweeping Experiments
 
-Current sweeping experiments are designed to use:
+Current sweeping experiments should use:
 
-- `pid`: PID waypoint tracking for sweep goals.
-- `orca`: ORCA-based motion selection for sweeping in dynamic scenes.
+- `pid`: PID waypoint tracking for generated sweep goals.
+- `orca`: ORCA-based collision-aware motion toward generated sweep goals.
 
-Do not use the SRNN policy for sweeping experiments. SRNN and `selfAttn_merge_srnn` remain available for crowd navigation and policy-learning experiments inherited from CrowdNav++, but sweeping is currently evaluated using PID and ORCA.
+Do **not** use SRNN for current sweeping experiments. SRNN and `selfAttn_merge_srnn` remain available for crowd navigation and future RL-based sweeping research.
 
-Key sweeping configuration lives in `crowd_nav/configs/config.py`:
+Key configuration lives in `crowd_nav/configs/config.py`:
 
 ```python
 robot.policy = 'orca'      # use 'orca' or 'pid' for current sweeping experiments
 robot.sweep = True
 robot.sweep_step = 2
-robot.sweep_axes = 0       # 0: x-axis sweep, 1: y-axis sweep, 'random': choose per episode
-robot.sweep_tail = 1       # show swept area during rendering
+robot.sweep_axes = 0       # 0: x-axis, 1: y-axis, 'random': choose per episode
+robot.sweep_tail = 1
 robot.sweep_margin = robot.radius + 0.2
 robot.sweep_lane_step = robot.radius * 2
 
-sim.empty_arena = False    # True: no humans, False: humans, 'random': mix both
-sim.human_num = 10
-sim.human_num_range = 0
+sim.empty_arena = False    # True, False, or 'random'
+sim.arena_width = 10
+sim.arena_height = 8
 ```
 
-For PID sweeping, configure:
+For PID:
 
 ```python
 robot.policy = 'pid'
-robot.ki = 0.0
 robot.kp = 1.2
+robot.ki = 0.0
 robot.kd = 0.2
 ```
 
 ## Architecture Overview
 
 ```text
-                  +-------------------------------+
-                  | crowd_nav/configs/config.py   |
-                  | experiment and controller cfg |
-                  +---------------+---------------+
-                                  |
-                                  v
-  +-------------------+   +-----------------------+   +------------------+
-  | crowd_nav/policy  |   | crowd_sim/envs        |   | gst_updated      |
-  | PID, ORCA, SRNN   +-->| Gym simulation        |<--+ trajectory pred  |
-  +-------------------+   | sweep goal updates    |   +------------------+
-                          | dynamic humans        |
-                          +-----------+-----------+
-                                      |
-                                      v
-                          +-----------------------+
-                          | rl/                   |
-                          | PPO, networks, eval   |
-                          +-----------+-----------+
-                                      |
-                                      v
-                          +-----------------------+
-                          | trained_models/       |
-                          | checkpoints, configs  |
-                          +-----------------------+
+crowd_nav/configs/config.py
+        |
+        v
+crowd_nav/policy/
+  ORCA, Social Force, SRNN, PID
+        |
+        v
+crowd_sim/envs/
+  rectangular arena, ellipse humans, empty arena,
+  sweep waypoint updates, dynamic populations
+        |
+        +--------------------+
+        |                    |
+        v                    v
+rl/ PPO, evaluation      gst_updated/ GST prediction
+        |
+        v
+trained_models/
 ```
 
 ## Repository Structure
 
-| Path | Purpose |
+| Path | Description |
 | --- | --- |
-| `crowd_sim/` | OpenAI Gym-style simulation environments, robot and human dynamics, rendering, sweep goal updates, variable human population environments, and prediction-aware environments. |
-| `crowd_nav/` | Navigation policies and project configuration. Includes ORCA, Social Force, PID, SRNN policy wrappers, and `crowd_nav/configs/config.py`. |
-| `rl/` | Reinforcement learning stack inherited from CrowdNav++, including PPO, rollout storage, policy networks, vectorized environments, normalization, and evaluation. |
-| `trained_models/` | Saved checkpoints, experiment configs, logs, and evaluation outputs for pretrained or local experiments. Includes crowd navigation and sweeping experiment folders. |
-| `configs/` | Experiment configuration snapshots are saved under model folders such as `trained_models/<experiment>/configs/`. The live source configuration is `crowd_nav/configs/`. |
-| `gst_updated/` | Gumbel Social Transformer trajectory prediction code and pretrained prediction assets used by prediction-aware environments. |
-| `figures/` | Images and animations used in documentation and visualization examples. |
+| `crowd_sim/` | Gym-style simulation environments, robot/human dynamics, ellipse generation, empty arena handling, sweep logic, rendering, and prediction-aware environments. |
+| `crowd_nav/` | Navigation policies and configuration. Includes ORCA, Social Force, SRNN wrappers, the added PID controller, and experiment settings. |
+| `rl/` | PPO, rollout storage, network definitions, vectorized environments, normalization, and evaluation utilities inherited from CrowdNav++. |
+| `trained_models/` | Saved checkpoints, copied configs, logs, and evaluation outputs for inherited and local experiments. |
+| `gst_updated/` | Gumbel Social Transformer trajectory prediction code and pretrained prediction assets inherited from the original workflow. |
+| `figures/` | Documentation and visualization assets. |
 | `train.py` | PPO training entry point for learned policy experiments. |
 | `test.py` | Evaluation and visualization entry point for PID, ORCA, Social Force, and learned policies. |
-| `arguments.py` | Training and evaluation command-line defaults, including output directory, environment name, PPO settings, and network dimensions. |
+| `arguments.py` | Training/evaluation command-line defaults. |
+| `environment.yml` | Conda environment specification added in this extension. |
 
 ## Installation
 
 ### Requirements
 
 - Linux is recommended.
-- Python 3.8 or newer is recommended.
-- CUDA-capable GPU is optional for learned policy training and trajectory prediction experiments.
+- Python 3.8+ is recommended; `environment.yml` currently pins Python 3.10.
+- CUDA is optional but useful for learned policies and prediction workflows.
 - ORCA experiments may require Python-RVO2.
 
-### 1. Clone
-
-```bash
-git clone <this-repository-url>
-cd AutoSweepNav
-```
-
-If you are working from the original directory name, use that directory instead:
-
-```bash
-cd CrowdNav_Prediction_AttnGraph
-```
-
-### 2. Create the Environment
+### Conda Setup
 
 ```bash
 conda env create -f environment.yml
 conda activate crowdnav
-```
-
-Then install the Python package requirements:
-
-```bash
 pip install -r requirements.txt
 ```
 
-### 3. Optional ORCA Dependency
-
-For ORCA-based policies, install Python-RVO2 if it is not already available:
+### Optional ORCA Dependency
 
 ```bash
 git clone https://github.com/sybrenstuvel/Python-RVO2.git
@@ -181,7 +160,7 @@ pip install -e .
 cd ..
 ```
 
-### 4. Verify
+### Verify
 
 ```bash
 python -c "import torch; print(torch.__version__); print(torch.cuda.is_available())"
@@ -189,14 +168,13 @@ python -c "import torch; print(torch.__version__); print(torch.cuda.is_available
 
 ## Quick Start
 
-### Evaluate ORCA Sweeping
+### ORCA Sweeping
 
-Set the live configuration in `crowd_nav/configs/config.py`:
+Set:
 
 ```python
 robot.policy = 'orca'
 robot.sweep = True
-sim.empty_arena = False      # or True for empty-arena coverage
 ```
 
 Run:
@@ -205,9 +183,9 @@ Run:
 python test.py --model_dir trained_models/sweep_empty_arena_x-axis --test_model 05000.pt --visualize
 ```
 
-For ORCA and PID, `test.py` does not load a neural policy when `robot.policy` is one of `orca`, `social_force`, or `pid`; the checkpoint argument is kept for compatibility with the existing evaluation interface.
+For ORCA and PID, the neural checkpoint is not loaded; the checkpoint argument is retained for compatibility with the original evaluation interface.
 
-### Evaluate PID Sweeping
+### PID Sweeping
 
 Set:
 
@@ -225,63 +203,73 @@ Run:
 python test.py --model_dir trained_models/sweep_empty_arena_x-axis --visualize
 ```
 
-### Train a Learned Crowd Navigation Policy
+### Empty Arena Sweeping
 
-SRNN/PPO training remains available for crowd navigation experiments inherited from CrowdNav++:
+Set:
 
-```bash
-python train.py
+```python
+sim.empty_arena = True
+robot.sweep = True
+robot.policy = 'pid'  # or 'orca'
 ```
 
-Training outputs are written to the directory configured by `--output_dir` in `arguments.py` or passed on the command line:
+The simulator keeps a dummy human entry so downstream observation and recurrent-policy utilities continue to receive valid tensor shapes.
+
+### Mixed Empty/Crowded Evaluation
+
+Set:
+
+```python
+sim.empty_arena = 'random'
+```
+
+Evaluation logs report empty and crowded episode counts and success/collision/timeout rates separately.
+
+### Learned Crowd Navigation
+
+Inherited PPO/SRNN training remains available for crowd navigation:
 
 ```bash
 python train.py --output_dir trained_models/my_experiment
 ```
 
-Use SRNN-based policies for crowd navigation research, not for the current sweeping experiments.
+Use learned SRNN-style policies for crowd navigation research unless you are explicitly developing the unfinished RL sweeping path.
 
-## Configuration Guide
+## Configuration Reference
 
-### Sweeping and Robot Control
+### New Environment Settings
 
-| Parameter | Description |
+| Variable | Purpose |
 | --- | --- |
-| `robot.policy` | Robot controller or learned policy. Use `pid` or `orca` for current sweeping experiments. |
-| `robot.sweep` | Enables autonomous sweep goal progression. |
-| `robot.sweep_step` | Goal advancement distance along the active sweep direction. |
-| `robot.sweep_axes` | Sweep orientation: `0` for x-axis, `1` for y-axis, or `'random'`. |
-| `robot.sweep_margin` | Boundary margin used to keep the robot inside the arena. |
-| `robot.sweep_lane_step` | Spacing between adjacent sweep lanes. |
-| `robot.sweep_tail` | Enables rendered sweep trace. |
-| `robot.kp`, `robot.ki`, `robot.kd` | PID gains used when `robot.policy = 'pid'`. |
+| `env.fig_size_x`, `env.fig_size_y` | Matplotlib figure size for visualization. |
+| `env.axes_equal` | Whether rendered axes use equal aspect ratio. |
+| `env.axes_visible` | Whether rendered axes are visible. |
+| `reward.step_penalty` | Configured step penalty; currently loaded but not fully integrated into the main sweep reward path. |
 
-### Arena and Humans
+### New Simulation Settings
 
-| Parameter | Description |
+| Variable | Purpose |
 | --- | --- |
-| `sim.arena_width`, `sim.arena_height` | Arena dimensions used by the simulator and sweep generator. |
-| `sim.empty_arena` | `True` for empty coverage, `False` for human environments, `'random'` for mixed evaluation. |
-| `sim.human_num` | Nominal number of humans. Keep this at least `1`; use `sim.empty_arena = True` for empty arenas. |
-| `sim.human_num_range` | Variation around the nominal number of humans in variable-population environments. |
-| `env.randomize_attributes` | Enables randomized human radius and preferred speed. |
-| `humans.random_goal_changing` | Allows human goals to change before reaching the current goal. |
-| `humans.end_goal_changing` | Allows new human goals after humans reach their current goals. |
+| `sim.arena_width`, `sim.arena_height` | Rectangular arena dimensions. |
+| `sim.ellipse_a`, `sim.ellipse_b` | Ellipse radii used for human crossing generation. |
+| `sim.start_at_boundary` | Optional boundary/gate-style human spawning. |
+| `sim.empty_arena` | `True`, `False`, or `'random'` for empty/crowded experiments. |
+| `sim.group` | Enables experimental group spawning. |
+| `sim.group_size` | Number of nearby humans to spawn in a group. |
 
-### Prediction Modes
+### New Robot Settings
 
-| Mode | Description |
+| Variable | Purpose |
 | --- | --- |
-| `inferred` | Uses the GST trajectory prediction model in `gst_updated/`. |
-| `const_vel` | Uses constant-velocity prediction. |
-| `truth` | Uses ground-truth future trajectories where available. |
-| `none` | Disables trajectory prediction. |
-
-When `sim.predict_method = 'inferred'`, `env.use_wrapper` must be enabled. The current configuration handles this automatically.
+| `robot.sweep` | Enables sweep waypoint generation. |
+| `robot.sweep_step` | Distance advanced along the active sweep direction. |
+| `robot.sweep_axes` | Sweep orientation: `0`, `1`, or `'random'`. |
+| `robot.sweep_tail` | Enables swept-area trace rendering. |
+| `robot.sweep_margin` | Keeps sweep goals away from arena boundaries. |
+| `robot.sweep_lane_step` | Spacing between sweep lanes. |
+| `robot.kp`, `robot.ki`, `robot.kd` | PID gains used by `robot.policy = 'pid'`. |
 
 ## Evaluation
-
-Use `test.py` for evaluation and visualization:
 
 ```bash
 python test.py \
@@ -294,43 +282,90 @@ Useful options:
 
 | Option | Description |
 | --- | --- |
-| `--model_dir` | Experiment directory containing configs, checkpoints, and evaluation logs. |
-| `--test_model` | Checkpoint filename for learned policies. Kept for interface compatibility with PID/ORCA. |
-| `--test_case` | `-1` evaluates the configured test set; nonnegative values repeat a specific case. |
-| `--visualize` | Opens a Matplotlib visualization. |
-| `--render_traj` | Saves trajectory information when enabled. |
-| `--save_slides` | Saves rendered frames for slideshow-style inspection. |
+| `--model_dir` | Experiment directory for logs/checkpoints/config snapshots. |
+| `--test_model` | Checkpoint filename for learned policies; unused for PID/ORCA execution. |
+| `--test_case` | `-1` evaluates the configured test set; nonnegative values repeat one case. |
+| `--visualize` | Opens Matplotlib visualization. |
+| `--render_traj` | Saves trajectory information. |
+| `--save_slides` | Saves rendered frames. |
 
-Evaluation logs are written under the selected `trained_models/<experiment>/test/` directory.
+Evaluation reports:
 
-## Pretrained and Saved Experiments
+- Overall success, collision, and timeout rates.
+- Average navigation time.
+- Path length.
+- Intrusion ratio and minimum-distance statistics.
+- Empty arena episode counts and rates.
+- Crowded arena episode counts and rates.
 
-The `trained_models/` directory contains saved experiments from the inherited CrowdNav++ workflow and local sweeping experiments.
+## Implementation Notes
 
-| Directory | Description |
-| --- | --- |
-| `trained_models/GST_predictor_rand/` | Crowd navigation policy with GST prediction and randomized human behavior. |
-| `trained_models/GST_predictor_non_rand/` | Crowd navigation policy with GST prediction without randomized human behavior. |
-| `trained_models/ORCA_no_rand/` | ORCA baseline experiment. |
-| `trained_models/SF_no_rand/` | Social Force baseline experiment. |
-| `trained_models/sweep_empty_arena/` | Saved sweeping experiment in an empty arena. |
-| `trained_models/sweep_empty_arena_x-axis/` | Saved x-axis sweeping experiment. |
+The comparison against upstream CrowdNav++ identified several important caveats:
 
-Check the `configs/` subdirectory inside each experiment before comparing results, because the saved configuration defines the environment and policy used for that run.
+- Coverage is currently represented by generated sweep waypoints and sweep-tail visualization. A complete coverage metric or coverage-specific reward is not yet implemented.
+- `reward.step_penalty` exists in config but is not fully applied in the main reward path.
+- Group behavior is experimental: spawning and labels exist, but coordinated group behavior is unfinished.
+- One rendering path in `crowd_sim/envs/crowd_sim_var_num.py` contains a debug typo, `import pbd; pbd.set_trace()`, which should be removed before relying on that renderer.
+- `test.py` currently uses the live config from `crowd_nav/configs/config.py`; saved experiment config loading is commented out.
+- `sim.human_num` should remain at least `1`; use `sim.empty_arena = True` for empty arenas.
+
+## Work in Progress
+
+The following features are present, partial, or planned for further development:
+
+- Group behaviour improvements.
+- Empty arena sweeping benchmarks.
+- Rectangle arena polishing and validation.
+- Ellipse crowd generation validation.
+- Coverage navigation metrics and reporting.
+- Coverage-specific reward logic.
+- Additional controllers beyond PID and ORCA.
+- Future reinforcement learning improvements for PPO/SRNN-based sweeping.
+- Removal of debug artifacts and cleanup of experimental code paths.
+- More complete benchmarking against crowd-navigation and coverage baselines.
+
+## Files Changed Relative to CrowdNav++
+
+Added:
+
+- `crowd_nav/policy/pid.py`
+- `environment.yml`
+
+Modified:
+
+- `README.md`
+- `arguments.py`
+- `crowd_nav/configs/config.py`
+- `crowd_nav/policy/policy_factory.py`
+- `crowd_sim/envs/crowd_sim.py`
+- `crowd_sim/envs/crowd_sim_pred.py`
+- `crowd_sim/envs/crowd_sim_pred_real_gst.py`
+- `crowd_sim/envs/crowd_sim_var_num.py`
+- `crowd_sim/envs/crowd_sim_var_num_collect.py`
+- `crowd_sim/envs/utils/agent.py`
+- `requirements.txt`
+- `rl/evaluation.py`
+- `test.py`
+- `train.py`
+- `trained_models/GST_predictor_rand/arguments.py`
+
+Removed:
+
+- No tracked files were removed relative to the upstream repository.
 
 ## Roadmap
 
-- Expand benchmarking for empty and human-populated sweeping scenarios.
-- Improve coverage metrics and reporting.
-- Continue PPO/SRNN-based sweeping research.
-- Add more motion planning and coverage planning baselines.
-- Improve reproducibility scripts for sweeping experiments.
-- Document recommended parameter sets for PID and ORCA sweeping.
-- Add richer visualizations for sweep coverage and missed areas.
+- Add explicit coverage metrics and coverage maps.
+- Add benchmark scripts for PID, ORCA, and future learned sweeping policies.
+- Stabilize group behavior and dynamic population experiments.
+- Clean up debug code and saved-config loading behavior.
+- Document reproducible experiment presets.
+- Extend controller comparisons.
+- Investigate PPO/SRNN policies for sweeping after classical-controller baselines are stable.
 
 ## Contributing
 
-Pull requests are welcome, especially for:
+Pull requests are welcome for:
 
 - Coverage planning.
 - Motion planning.
@@ -340,11 +375,11 @@ Pull requests are welcome, especially for:
 - Robot control.
 - Benchmarking and reproducibility.
 
-Please keep contributions scoped, document new configuration options, and include evaluation notes or tests where practical. If your change modifies inherited CrowdNav++ behavior, describe whether it affects crowd navigation, sweeping, or both.
+Please keep changes scoped and document whether they affect inherited CrowdNav++ behavior, sweeping extensions, or both.
 
 ## Citation
 
-If you use the original CrowdNav++ methods, models, or code inherited in this repository, please cite the original work:
+If you use the original CrowdNav++ implementation or inherited methods, cite:
 
 ```bibtex
 @inproceedings{liu2022intention,
@@ -356,7 +391,7 @@ If you use the original CrowdNav++ methods, models, or code inherited in this re
 }
 ```
 
-The SRNN crowd navigation foundation is also associated with:
+The inherited SRNN crowd navigation foundation is associated with:
 
 ```bibtex
 @inproceedings{liu2020decentralized,
@@ -368,30 +403,28 @@ The SRNN crowd navigation foundation is also associated with:
 }
 ```
 
-If you use this extension for autonomous sweeping or coverage navigation experiments, please cite this repository as an extension:
+If you use this extension for autonomous sweeping or coverage navigation experiments, cite this repository as an extension:
 
 ```bibtex
 @misc{autosweepnav,
-  title = {AutoSweepNav: Autonomous Sweeping and Coverage Navigation in Dynamic Human Environments},
+  title = {AutoSweepNav: Autonomous Sweeping and Coverage-Oriented Navigation in Dynamic Human Environments},
   howpublished = {\url{<repository-url>}},
-  note = {Extension of Shuijing Liu et al.'s CrowdNav++ implementation for autonomous sweeping and coverage navigation},
+  note = {Research extension of Shuijing Liu et al.'s CrowdNav++ implementation},
   year = {2026}
 }
 ```
 
-Replace `<repository-url>` with the public URL of this repository when citing.
+Replace `<repository-url>` with the public URL of this repository.
 
 ## Acknowledgements
 
-This repository builds on the work of Shuijing Liu and collaborators, whose CrowdNav++ implementation and related papers provide the foundation for the crowd navigation and trajectory prediction workflow used here.
-
 Thanks to:
 
-- Shuijing and collaborators for the original CrowdNav++ project.
-- The CrowdNav++ research codebase and papers.
-- The GST authors for the trajectory prediction model integrated into the original workflow.
-- The open-source robotics community for tools, baselines, and shared research infrastructure.
+- Shuijing Liu and collaborators for the original CrowdNav++ project.
+- The CrowdNav++ authors for the attention-based crowd navigation framework.
+- The GST authors for trajectory prediction components used by the original workflow.
+- The open-source robotics community for simulation, learning, and navigation tools.
 
 ## License
 
-This repository follows the included `LICENSE`. The inherited CrowdNav++ components remain credited to their original authors.
+This repository follows the included `LICENSE`. Inherited CrowdNav++ components remain credited to their original authors.

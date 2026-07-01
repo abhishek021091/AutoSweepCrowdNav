@@ -778,7 +778,7 @@ class CrowdSimVarNum(CrowdSim):
 
         # add robot
         robotX,robotY=self.robot.get_position()
-        import pbd; pbd.set_trace()
+        #import pbd; pbd.set_trace()
         if self.sweep_tail:
             self.swept_points.append((robotX,robotY))
             for x,y in self.swept_points:
