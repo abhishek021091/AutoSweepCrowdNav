@@ -49,12 +49,12 @@ class Config(object):
     sim.ellipse_b = sim.arena_height * np.sqrt(2)
     #sim.arena_size = 6
     sim.start_at_boundary = False
-    sim.empty_arena = True   #True for empty arena, False for human crowd and random for both empty and human crowd
+    sim.empty_arena = False   #True for empty arena, False for human crowd and random for both empty and human crowd
     sim.group = False
     sim.group_size = 2
-    sim.human_num = 5  #Don't put this value less than 1 just make self.empty arena True for empty arena, otherwise it will cause error in the code selfAttn_srnn_temp_node.py
-    sim.human_num_range = 3
-    sim.predict_steps = 5
+    sim.human_num = 10  #Don't put this value less than 1 just make self.empty arena True for empty arena, otherwise it will cause error in the code selfAttn_srnn_temp_node.py
+    sim.human_num_range = 0
+    sim.predict_steps = 10
     # 'const_vel': constant velocity model,
     # 'truth': ground truth future traj (with info in robot's fov)
     # 'inferred': inferred future traj from GST network
@@ -92,7 +92,7 @@ class Config(object):
     humans.goal_change_chance = 0.5
 
     # a human may change its goal after it reaches its old goal
-    humans.end_goal_changing = False
+    humans.end_goal_changing = True
     humans.end_goal_change_chance = 1.0
 
     # a human may change its radius and/or v_pref after it reaches its current goal
@@ -110,7 +110,11 @@ class Config(object):
     # whether robot is visible to humans (whether humans respond to the robot's motion)
     robot.visible = False
     # For baseline: srnn; our method: selfAttn_merge_srnn
-    robot.policy = 'selfAttn_merge_srnn'
+    robot.policy = 'orca'
+    if robot.policy == 'pid':
+        robot.ki = 0.0
+        robot.kp = 1.2
+        robot.kd = 0.2
     robot.sweep = True
     robot.sweep_step = 2
     robot.sweep_axes = 0   # 0 for x-axis, 1 for y-axis, random for randomly choosing axes
@@ -120,7 +124,7 @@ class Config(object):
     robot.sweep_lane_step = robot.radius * 2
     robot.v_pref = 1
     robot.sensor = "coordinates"
-    robot.controller = "pid"  #pid for using pid controller, ppo for using ppo
+    #robot.controller = "pid"  #pid for using pid controller, ppo for using ppo
     # FOV = this values * PI
     robot.FOV = 2
     # radius of perception range

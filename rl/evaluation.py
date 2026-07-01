@@ -2,7 +2,6 @@ import numpy as np
 import torch
 
 from crowd_sim.envs.utils.info import *
-from rl.pid import PID
 
 
 def evaluate(actor_critic, eval_envs, num_processes, device, test_size, logging, config, args, visualize=False):
@@ -10,7 +9,7 @@ def evaluate(actor_critic, eval_envs, num_processes, device, test_size, logging,
     # initializations
     eval_episode_rewards = []
 
-    if config.robot.policy not in ['orca', 'social_force']:
+    if config.robot.policy not in ['orca', 'social_force','pid']:
         eval_recurrent_hidden_states = {}
 
         node_num = 1
@@ -59,8 +58,6 @@ def evaluate(actor_critic, eval_envs, num_processes, device, test_size, logging,
         baseEnv = eval_envs.venv.unwrapped.envs[0].env
     time_limit = baseEnv.time_limit
 
-    pid_x = PID(1.2, 0.0, 0.2)
-    pid_y = PID(1.2, 0.0, 0.2)
     # start the testing episodes
     for k in range(test_size):
         baseEnv.episode_k = k
@@ -68,8 +65,6 @@ def evaluate(actor_critic, eval_envs, num_processes, device, test_size, logging,
         rewards = []
         stepCounter = 0
         episode_rew = 0
-        pid_x.reset()
-        pid_y.reset()
         obs = eval_envs.reset()
         global_time = 0.0
         path_len = 0.
@@ -79,41 +74,14 @@ def evaluate(actor_critic, eval_envs, num_processes, device, test_size, logging,
 
         while not done:
             stepCounter = stepCounter + 1
-            if config.robot.controller == "ppo":
-
+            if config.robot.policy not in ['orca', 'social_force', 'pid']:
+                # run inference on the NN policy
                 with torch.no_grad():
                     _, action, _, eval_recurrent_hidden_states = actor_critic.act(
                         obs,
                         eval_recurrent_hidden_states,
                         eval_masks,
                         deterministic=True)
-
-            elif config.robot.controller == "pid":
-
-                robot = baseEnv.robot
-
-                ex = robot.gx - robot.px
-                ey = robot.gy - robot.py
-
-                vx = pid_x.update(ex, baseEnv.time_step)
-                vy = pid_y.update(ey, baseEnv.time_step)
-
-                speed = np.hypot(vx, vy)
-
-                if speed > robot.v_pref:
-                    scale = robot.v_pref / speed
-                    vx *= scale
-                    vy *= scale
-
-                action = torch.tensor(
-                    [[vx, vy]],
-                    dtype=torch.float32,
-                    device=device
-                )
-
-            elif config.robot.policy in ['orca', 'social_force']:
-
-                action = torch.zeros([1, 2], device=device)
             else:
                 action = torch.zeros([1, 2], device=device)
             if not done:

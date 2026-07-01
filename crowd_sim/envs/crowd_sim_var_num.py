@@ -442,7 +442,8 @@ class CrowdSimVarNum(CrowdSim):
         Reset the environment
         :return:
         """
-
+        if self.robot.policy.name == "PID":
+            self.robot.policy.reset()
         if self.phase is not None:
             phase = self.phase
         if self.test_case is not None:
@@ -509,6 +510,9 @@ class CrowdSimVarNum(CrowdSim):
             # assemble observation for orca: px, py, vx, vy, r
             human_states = copy.deepcopy(self.last_human_states)
             # get orca action
+            action = self.robot.act(human_states.tolist())
+        elif self.robot.policy.name == 'PID':
+            human_states = copy.deepcopy(self.last_human_states)
             action = self.robot.act(human_states.tolist())
         else:
             action = self.robot.policy.clip_action(action, self.robot.v_pref)

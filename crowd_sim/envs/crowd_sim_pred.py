@@ -116,6 +116,9 @@ class CrowdSimPred(CrowdSimVarNum):
                                           axis=1)
             # get orca action
             action = self.robot.act(human_states.tolist())
+        elif self.robot.policy.name == 'PID':
+            human_states = copy.deepcopy(self.last_human_states)
+            action = self.robot.act(human_states.tolist())
         else:
             action = self.robot.policy.clip_action(action, self.robot.v_pref)
 
@@ -211,7 +214,7 @@ class CrowdSimPred(CrowdSimVarNum):
         if self.end_goal_changing and not self.record:
             for i, human in enumerate(self.humans):
                 if norm((human.gx - human.px, human.gy - human.py)) < human.radius:
-                    self.humans[i] = self.generate_circle_crossing_human()
+                    self.humans[i] = self.generate_ellipse_crossing_human()
                     self.humans[i].id = i
 
         return ob, reward, done, info

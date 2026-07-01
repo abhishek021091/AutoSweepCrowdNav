@@ -141,7 +141,7 @@ def main():
 						 algo_args.gamma, eval_dir, device, allow_early_resets=True,
 						 config=env_config, ax=ax, test_case=test_args.test_case, pretext_wrapper=config.env.use_wrapper)
 
-	if config.robot.policy not in ['orca', 'social_force']:
+	if config.robot.policy not in ['orca', 'social_force', 'pid']:
 		# load the policy weights
 		actor_critic = Policy(
 			envs.observation_space.spaces,
