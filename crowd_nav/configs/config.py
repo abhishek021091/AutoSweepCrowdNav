@@ -129,7 +129,7 @@ class Config(object):
     robot.FOV = 2
     # radius of perception range
     robot.sensor_range = 5
-
+    robot.robot_human_safety_margin = 0.5
     # action space of the robot
     action_space = BaseConfig()
     # holonomic or unicycle

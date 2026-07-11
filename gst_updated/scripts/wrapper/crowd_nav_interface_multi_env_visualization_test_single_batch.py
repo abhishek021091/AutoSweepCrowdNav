@@ -288,6 +288,7 @@ def CrowdNavPredInterfaceMultiEnv(
     output_traj = output_traj.reshape(n_env, num_total_peds // n_env, output_traj.shape[1], output_traj.shape[2]) # (n_env, ped, time, 5)
     output_binary_mask = output_binary_mask.reshape(n_env, num_total_peds // n_env, 1) # (n_env, ped, 1)
     output_traj, output_binary_mask = output_traj.numpy(), output_binary_mask.numpy()
+    print(output_traj)
     # reshape has been tested
     # print("PERFORMED PREDICTION")
     # print("mu_cumsum shape: ", mu_cumsum.shape)

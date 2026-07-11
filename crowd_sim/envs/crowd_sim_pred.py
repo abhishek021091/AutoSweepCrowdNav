@@ -97,7 +97,27 @@ class CrowdSimPred(CrowdSimVarNum):
             ob['detected_human_num'] = 1
 
         return ob
-
+    
+    def check_intrusion(self):
+        ob = self.generate_ob(reset = False)
+        rob_goal_vec = np.array(self.robot.get_goal_position())- np.array(self.robot.get_position())
+        rob_goal_dist = np.linalg.norm(rob_goal_vec)
+        traj = ob['spatial_edges'].reshape(-1,self.predict_steps + 1,2)
+        longitudinal_distance = np.sum(traj * rob_goal_vec, axis=2)/rob_goal_dist
+        robot_goal_unit = rob_goal_vec / rob_goal_dist
+        lateral_distance =np.linalg.norm(traj - (longitudinal_distance[:, :, None] * robot_goal_unit), axis = 2)
+        if np.all(longitudinal_distance>rob_goal_dist):
+            return False
+        elif np.any(longitudinal_distance<rob_goal_dist) and np.any(longitudinal_distance>0):
+            if np.any(lateral_distance < (self.robot.radius + self.config.humans.radius+ self.config.robot.robot_human_safety_margin)):
+                return True
+            else:
+                return False
+        '''
+        elif longitudinal_position<self.robot_radius:
+            if lateral_distance > self.robot.radius+ob['robot_node']+ self.config.robot_human_safety_margin:
+                action = ActionXY(self.robot.get_velocity())
+        '''
 
     def step(self, action, update=True):
         """
@@ -115,7 +135,10 @@ class CrowdSimPred(CrowdSimVarNum):
                                            np.tile(self.last_human_states[:, -1], self.predict_steps+1).reshape((-1, 1))),
                                           axis=1)
             # get orca action
-            action = self.robot.act(human_states.tolist())
+            if self.check_intrusion():
+                action = ActionXY(0,0)
+            else:
+                action = self.robot.act(human_states.tolist())
         elif self.robot.policy.name == 'PID':
             human_states = copy.deepcopy(self.last_human_states)
             action = self.robot.act(human_states.tolist())
