@@ -15,7 +15,6 @@ class Agent(object):
 
         """
         subconfig = config.robot if section == 'robot' else config.humans
-        self.visible = subconfig.visible
         self.v_pref = subconfig.v_pref
         self.radius = subconfig.radius
         # randomize neighbor_dist of ORCA
@@ -51,7 +50,7 @@ class Agent(object):
         self.radius = np.random.uniform(0.3, 0.5)
 
     def set(self, px, py, gx, gy, vx, vy, theta,agent = 'robot', radius=None, v_pref=None, group_size=1,
-            sweep_stop=None, sweep_start=None, sweep_dir=None, sweep_axes = None):
+            sweep_stop=None, sweep_start=None, sweep_dir=None, sweep_axes = None , visible = False):
         self.px = px
         self.py = py
         self.gx = gx
@@ -65,7 +64,7 @@ class Agent(object):
             self.sweep_start = sweep_start
             self.sweep_dir = sweep_dir
             self.sweep_axes = sweep_axes
-
+        self.visible = visible
         if radius is not None:
             self.radius = radius
         if v_pref is not None:

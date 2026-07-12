@@ -101,7 +101,7 @@ class CrowdSimPred(CrowdSimVarNum):
     #def calculate_human_velocity(self):
 
     
-    def check_intrusion(self):
+    def check_intrusion_SAT(self):
         print(self.last_human_states)
         ob = self.generate_ob(reset = False)
         rob_goal_vec = np.array(self.robot.get_goal_position())- np.array(self.robot.get_position())
@@ -122,7 +122,7 @@ class CrowdSimPred(CrowdSimVarNum):
             if lateral_distance > self.robot.radius+ob['robot_node']+ self.config.robot_human_safety_margin:
                 action = ActionXY(self.robot.get_velocity())
         '''
-    def check_intrusion(self):
+    def check_intrusion_path_intersection(self):
         rob_pos = np.array(self.robot.get_position())
         rob_goal_pos = np.array(self.robot.get_goal_position())
         human_pos = copy.deepcopy(self.last_human_states)
@@ -145,11 +145,36 @@ class CrowdSimPred(CrowdSimVarNum):
         
         is_coll_btw_rob_and_goal = np.dot(rob_goal_human_vec,rob_goal_vec)/np.linalg.norm(rob_goal_vec)
 
-        mask_is_coll_btw_rob_and_goal = ((is_coll_btw_rob_and_goal >= 0) & (is_coll_btw_rob_and_goal <= 1))
+        is_coll_btw_rob_and_goal_x = (human_pos[:,0] + human_dist_to_coll*human_pos[:,2]- rob_goal_pos[0])/(rob_pos[0]-rob_goal_pos[0])
+        is_coll_btw_rob_and_goal_y = (human_pos[:,1] + human_dist_to_coll*human_pos[:,3]- rob_goal_pos[1])/(rob_pos[1]-rob_goal_pos[1])
+
+        mask_is_coll_btw_rob_and_goal_x = ((is_coll_btw_rob_and_goal_x >= 0) & (is_coll_btw_rob_and_goal_x <= 1))
+        mask_is_coll_btw_rob_and_goal_y = ((is_coll_btw_rob_and_goal_y >= 0) & (is_coll_btw_rob_and_goal_y <= 1))
+
         mask_human_dist_to_coll = (human_dist_to_coll <= safe_dist)
         mask_rob_human_dist = (np.linalg.norm(human_pos[:,0:2] - rob_pos, axis=1)<= safe_dist)
-        collision_mask = (mask_is_coll_btw_rob_and_goal & mask_human_dist_to_coll & mask_rob_human_dist)
+        collision_mask = (mask_is_coll_btw_rob_and_goal_x & mask_is_coll_btw_rob_and_goal_y & mask_human_dist_to_coll & mask_rob_human_dist)
         return np.any(collision_mask)
+    
+    def check_intrusion_cpa(self):
+        rob_pos = np.array(self.robot.get_position())
+        rob_goal_pos = np.array(self.robot.get_goal_position())
+        rob_vel = np.array(self.robot.get_velocity())
+        human_pos = copy.deepcopy(self.last_human_states)
+        safe_dist = self.robot.radius + human_pos[:,4] + self.config.robot.robot_human_safety_margin
+        relative_pos = human_pos[:,0:2]-rob_pos
+        relative_vel = human_pos[:,2:4]-rob_vel
+        mask_rob_human_dist = (np.linalg.norm(human_pos[:,0:2] - rob_pos, axis=1)<= safe_dist)
+
+        min_time = np.sum((-relative_pos) * relative_vel, axis=1)/np.sum(relative_vel**2, axis=1)
+        mask_min_time = (min_time > 0) & (min_time < 1)
+
+        #closest_pos = relative_pos + relative_vel * min_time[:, None]
+        #closest_dist = np.linalg.norm(closest_pos, axis=1)
+        #mask_collision = closest_dist <= safe_dist
+        #collision_mask = mask_min_time & mask_collision
+        #return np.any(collision_mask)
+        return np.any(mask_min_time)
 
     def step(self, action, update=True):
         """
@@ -167,9 +192,11 @@ class CrowdSimPred(CrowdSimVarNum):
                                            np.tile(self.last_human_states[:, -1], self.predict_steps+1).reshape((-1, 1))),
                                           axis=1)
             # get orca action
-            if self.check_intrusion():
+            if self.check_intrusion_cpa():
                 action = ActionXY(0,0)
+                self.robot.visible = True
             else:
+                self.robot.visible = False
                 action = self.robot.act(human_states.tolist())
         elif self.robot.policy.name == 'PID':
             human_states = copy.deepcopy(self.last_human_states)

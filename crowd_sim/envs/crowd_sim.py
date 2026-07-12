@@ -77,6 +77,7 @@ class CrowdSim(gym.Env):
         self.step_penalty = None
         self.sweep_tail = None
         self.swept_points = None
+        self.robot_visible = None
 
         #seed
         self.thisSeed=None # the seed will be set when the env is created
@@ -136,6 +137,7 @@ class CrowdSim(gym.Env):
         self.robot_sweep_step = config.robot.sweep_step
         self.robot_sweep_margin = config.robot.sweep_margin
         self.robot_sweep_lane_step = config.robot.sweep_lane_step
+        self.robot_visible = config.robot.visible
         self.prev_step = 0
         self.step_penalty = self.config.reward.step_penalty
         self.sweep_tail = self.config.robot.sweep_tail
@@ -343,6 +345,7 @@ class CrowdSim(gym.Env):
             human_num = self.human_num
 
         if self.robot.kinematics == 'unicycle':
+            visible = self.robot_visible
             angle = np.random.uniform(0, np.pi * 2)
             px = self.ellipse_a * np.cos(angle)
             py = self.ellipse_b * np.sin(angle)
@@ -350,15 +353,16 @@ class CrowdSim(gym.Env):
                 gx, gy = np.random.uniform(-self.ellipse_a, self.ellipse_a, 2)
                 if np.linalg.norm([px - gx, py - gy]) >= 6:  # 1 was 6
                     break
-            self.robot.set(px, py, gx, gy, 0, 0, np.random.uniform(0, 2*np.pi)) # randomize init orientation
+            self.robot.set(px, py, gx, gy, 0, 0, np.random.uniform(0, 2*np.pi),visible) # randomize init orientation
 
         # randomize starting position and goal position
         else:
             while True:
+                visible = self.config.robot_visible
                 px, py, gx, gy = np.random.uniform(-self.ellipse_a, self.ellipse_a, 4)
                 if np.linalg.norm([px - gx, py - gy]) >= 6:
                     break
-            self.robot.set(px, py, gx, gy, 0, 0, np.pi/2)
+            self.robot.set(px, py, gx, gy, 0, 0, np.pi/2,visible)
 
 
         # generate humans
