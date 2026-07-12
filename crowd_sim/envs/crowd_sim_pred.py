@@ -98,7 +98,11 @@ class CrowdSimPred(CrowdSimVarNum):
 
         return ob
     
+    #def calculate_human_velocity(self):
+
+    
     def check_intrusion(self):
+        print(self.last_human_states)
         ob = self.generate_ob(reset = False)
         rob_goal_vec = np.array(self.robot.get_goal_position())- np.array(self.robot.get_position())
         rob_goal_dist = np.linalg.norm(rob_goal_vec)
@@ -118,6 +122,34 @@ class CrowdSimPred(CrowdSimVarNum):
             if lateral_distance > self.robot.radius+ob['robot_node']+ self.config.robot_human_safety_margin:
                 action = ActionXY(self.robot.get_velocity())
         '''
+    def check_intrusion(self):
+        rob_pos = np.array(self.robot.get_position())
+        rob_goal_pos = np.array(self.robot.get_goal_position())
+        human_pos = copy.deepcopy(self.last_human_states)
+        safe_dist = self.robot.radius + human_pos[:,4] + self.config.robot.robot_human_safety_margin
+        speed = np.linalg.norm(human_pos[:, 2:4], axis=1, keepdims=True)
+        speed[speed < 1e-8] = 1.0
+        human_pos[:, 2:4] /= speed
+
+        num_human_dist_to_coll = (((rob_pos[0] - rob_goal_pos[0])*(human_pos[:,1]-rob_goal_pos[1])) - (((rob_pos[1] - rob_goal_pos[1])*(human_pos[:,0]-rob_goal_pos[0]))))
+
+        den_human_dist_to_coll = (((rob_pos[1]-rob_goal_pos[1])*human_pos[:,2]) - ((rob_pos[0]-rob_goal_pos[0])*human_pos[:,3]))
+
+        den_human_dist_to_coll = np.where(np.abs(den_human_dist_to_coll)<1e-8,1e-8,den_human_dist_to_coll)
+
+        human_dist_to_coll = num_human_dist_to_coll/den_human_dist_to_coll
+        human_dist_to_coll = human_dist_to_coll.reshape(-1, 1)
+
+        rob_goal_human_vec = (human_pos[:,0:2]+human_dist_to_coll*human_pos[:,2:4]) - rob_goal_pos
+        rob_goal_vec = rob_pos - rob_goal_pos
+        
+        is_coll_btw_rob_and_goal = np.dot(rob_goal_human_vec,rob_goal_vec)/np.linalg.norm(rob_goal_vec)
+
+        mask_is_coll_btw_rob_and_goal = ((is_coll_btw_rob_and_goal >= 0) & (is_coll_btw_rob_and_goal <= 1))
+        mask_human_dist_to_coll = (human_dist_to_coll <= safe_dist)
+        mask_rob_human_dist = (np.linalg.norm(human_pos[:,0:2] - rob_pos, axis=1)<= safe_dist)
+        collision_mask = (mask_is_coll_btw_rob_and_goal & mask_human_dist_to_coll & mask_rob_human_dist)
+        return np.any(collision_mask)
 
     def step(self, action, update=True):
         """
