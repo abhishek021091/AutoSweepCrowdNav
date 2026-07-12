@@ -97,31 +97,24 @@ class CrowdSimPred(CrowdSimVarNum):
             ob['detected_human_num'] = 1
 
         return ob
-    
-    #def calculate_human_velocity(self):
-
-    
+      
     def check_intrusion_SAT(self):
-        print(self.last_human_states)
-        ob = self.generate_ob(reset = False)
-        rob_goal_vec = np.array(self.robot.get_goal_position())- np.array(self.robot.get_position())
+        rob_pos = np.array(self.robot.get_position())
+        rob_goal_pos = np.array(self.robot.get_goal_position())
+        rob_goal_vec = rob_goal_pos - rob_pos
         rob_goal_dist = np.linalg.norm(rob_goal_vec)
-        traj = ob['spatial_edges'].reshape(-1,self.predict_steps + 1,2)
-        longitudinal_distance = np.sum(traj * rob_goal_vec, axis=2)/rob_goal_dist
+        human_pos = copy.deepcopy(self.last_human_states)
+        relative_pos = human_pos[:,0:2] - rob_pos
         robot_goal_unit = rob_goal_vec / rob_goal_dist
-        lateral_distance =np.linalg.norm(traj - (longitudinal_distance[:, :, None] * robot_goal_unit), axis = 2)
-        if np.all(longitudinal_distance>rob_goal_dist):
-            return False
-        elif np.any(longitudinal_distance<rob_goal_dist) and np.any(longitudinal_distance>0):
-            if np.any(lateral_distance < (self.robot.radius + self.config.humans.radius+ self.config.robot.robot_human_safety_margin)):
+        safe_dist = self.robot.radius + human_pos[:,4] + self.config.robot.robot_human_safety_margin
+        longitudinal_distance = np.sum(relative_pos * robot_goal_unit,axis=1)/rob_goal_dist
+        projection = longitudinal_distance[:,None] * robot_goal_unit
+        lateral_distance = np.linalg.norm(relative_pos - projection, axis=1)
+        logitudinal_distance_mask = ((longitudinal_distance>0) & (longitudinal_distance<rob_goal_dist))
+        if np.any(logitudinal_distance_mask) and np.any(longitudinal_distance>0):
+            if np.any(lateral_distance < safe_dist):
                 return True
-            else:
-                return False
-        '''
-        elif longitudinal_position<self.robot_radius:
-            if lateral_distance > self.robot.radius+ob['robot_node']+ self.config.robot_human_safety_margin:
-                action = ActionXY(self.robot.get_velocity())
-        '''
+            
     def check_intrusion_path_intersection(self):
         rob_pos = np.array(self.robot.get_position())
         rob_goal_pos = np.array(self.robot.get_goal_position())
@@ -139,11 +132,6 @@ class CrowdSimPred(CrowdSimVarNum):
 
         human_dist_to_coll = num_human_dist_to_coll/den_human_dist_to_coll
         human_dist_to_coll = human_dist_to_coll.reshape(-1, 1)
-
-        rob_goal_human_vec = (human_pos[:,0:2]+human_dist_to_coll*human_pos[:,2:4]) - rob_goal_pos
-        rob_goal_vec = rob_pos - rob_goal_pos
-        
-        #is_coll_btw_rob_and_goal = np.dot(rob_goal_human_vec,rob_goal_vec)/np.linalg.norm(rob_goal_vec)
 
         is_coll_btw_rob_and_goal_x = (human_pos[:,0] + human_dist_to_coll*human_pos[:,2]- rob_goal_pos[0])/(rob_pos[0]-rob_goal_pos[0])
         is_coll_btw_rob_and_goal_y = (human_pos[:,1] + human_dist_to_coll*human_pos[:,3]- rob_goal_pos[1])/(rob_pos[1]-rob_goal_pos[1])
@@ -164,7 +152,6 @@ class CrowdSimPred(CrowdSimVarNum):
         safe_dist = self.robot.radius + human_pos[:,4] + self.config.robot.robot_human_safety_margin
         relative_pos = human_pos[:,0:2]-rob_pos
         relative_vel = human_pos[:,2:4]-rob_vel
-        mask_rob_human_dist = (np.linalg.norm(human_pos[:,0:2] - rob_pos, axis=1)<= safe_dist)
 
         min_time = np.sum((-relative_pos) * relative_vel, axis=1)/np.sum(relative_vel**2, axis=1)
         mask_min_time = (min_time > 0) & (min_time < 2)
@@ -192,7 +179,7 @@ class CrowdSimPred(CrowdSimVarNum):
                                            np.tile(self.last_human_states[:, -1], self.predict_steps+1).reshape((-1, 1))),
                                           axis=1)
             # get orca action
-            if self.check_intrusion_path_intersection():
+            if self.check_intrusion_SAT():
                 action = ActionXY(0,0)
                 self.robot.visible = True
                 robot_pos = ((self.robot.get_position()),(self.robot.get_velocity()))
