@@ -54,12 +54,15 @@ class ORCA(Policy):
         """
         super().__init__(config)
         self.name = 'ORCA'
+        self.agent = None
         self.max_neighbors = None
         self.radius = None
         self.max_speed = 1 # the ego agent assumes that all other agents have this max speed
         self.sim = None
         self.safety_space = self.config.orca.safety_space
 
+    def set_agent(self,agent):
+        self.agent=agent
 
     def predict(self, state):
         """
@@ -111,7 +114,23 @@ class ORCA(Policy):
             self.sim.setAgentPrefVelocity(i + 1, (0, 0))
 
         self.sim.doStep()
-        action = ActionXY(*self.sim.getAgentVelocity(0))
-        self.last_state = state
 
+        orca_vel = np.array(self.sim.getAgentVelocity(0))
+        if self.agent.agent == "robot" and self.config.robot.sweep:
+            goal_vec = np.array([self_state.gx - self_state.px,self_state.gy - self_state.py])
+            goal_dist = np.linalg.norm(goal_vec)
+            if goal_dist > 1e-8:
+                goal_dir = goal_vec / goal_dist
+                # Projection of ORCA velocity onto sweep direction
+                speed = np.dot(orca_vel, goal_dir)
+                # Don't allow backward motion
+                speed = max(speed, 0.0)
+                projected_vel = speed * goal_dir
+                action = ActionXY(projected_vel[0], projected_vel[1])
+            else:
+                action = ActionXY(*self.sim.getAgentVelocity(0))
+        else:
+            action = ActionXY(*self.sim.getAgentVelocity(0))
+
+        self.last_state = state
         return action

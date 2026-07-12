@@ -3,7 +3,7 @@ from crowd_nav.policy.policy import Policy
 from crowd_sim.envs.utils.action import ActionXY
 
 class SOCIAL_FORCE(Policy):
-    def __init__(self, config):
+    def __init__(self, config,agent):
         super().__init__(config)
         self.name = 'social_force'
 

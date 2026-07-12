@@ -14,6 +14,7 @@ class Agent(object):
         Base class for robot and human. Have the physical attributes of an agent.
 
         """
+        self.agent = section
         subconfig = config.robot if section == 'robot' else config.humans
         self.v_pref = subconfig.v_pref
         self.radius = subconfig.radius
@@ -21,6 +22,7 @@ class Agent(object):
         if config.env.randomize_attributes:
             config.orca.neighbor_dist = np.random.uniform(5, 10)
         self.policy = policy_factory[subconfig.policy](config)
+        self.policy.set_agent(self)
         self.sensor = subconfig.sensor
         self.FOV = np.pi * subconfig.FOV
         # for humans: we only have holonomic kinematics; for robot: depend on config
@@ -49,7 +51,7 @@ class Agent(object):
         self.v_pref = np.random.uniform(0.5, 1.5)
         self.radius = np.random.uniform(0.3, 0.5)
 
-    def set(self, px, py, gx, gy, vx, vy, theta,agent = 'robot', radius=None, v_pref=None, group_size=1,
+    def set(self, px, py, gx, gy, vx, vy, theta, agent = 'robot', radius=None, v_pref=None, group_size=1,
             sweep_stop=None, sweep_start=None, sweep_dir=None, sweep_axes = None , visible = False):
         self.px = px
         self.py = py

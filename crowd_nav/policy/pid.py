@@ -38,7 +38,7 @@ class PIDPolicy:
 
 class PID:
 
-    def __init__(self, config):
+    def __init__(self, config,agent):
 
         self.name = "PID"
 

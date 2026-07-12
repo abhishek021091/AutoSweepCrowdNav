@@ -5,7 +5,7 @@ from crowd_sim.envs.utils.action import ActionRot, ActionXY
 
 
 class SRNN(Policy):
-	def __init__(self, config):
+	def __init__(self, config,agent):
 		super().__init__(config)
 		self.time_step = self.config.env.time_step # Todo: is this needed?
 		self.name = 'srnn'

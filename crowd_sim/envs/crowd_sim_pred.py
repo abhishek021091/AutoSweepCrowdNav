@@ -143,12 +143,12 @@ class CrowdSimPred(CrowdSimVarNum):
         rob_goal_human_vec = (human_pos[:,0:2]+human_dist_to_coll*human_pos[:,2:4]) - rob_goal_pos
         rob_goal_vec = rob_pos - rob_goal_pos
         
-        is_coll_btw_rob_and_goal = np.dot(rob_goal_human_vec,rob_goal_vec)/np.linalg.norm(rob_goal_vec)
+        #is_coll_btw_rob_and_goal = np.dot(rob_goal_human_vec,rob_goal_vec)/np.linalg.norm(rob_goal_vec)
 
         is_coll_btw_rob_and_goal_x = (human_pos[:,0] + human_dist_to_coll*human_pos[:,2]- rob_goal_pos[0])/(rob_pos[0]-rob_goal_pos[0])
         is_coll_btw_rob_and_goal_y = (human_pos[:,1] + human_dist_to_coll*human_pos[:,3]- rob_goal_pos[1])/(rob_pos[1]-rob_goal_pos[1])
 
-        mask_is_coll_btw_rob_and_goal_x = ((is_coll_btw_rob_and_goal_x >= 0) & (is_coll_btw_rob_and_goal_x <= 1))
+        mask_is_coll_btw_rob_and_goal_x = ((is_coll_btw_rob_and_goal_x >= 0) | (is_coll_btw_rob_and_goal_x <= 1))
         mask_is_coll_btw_rob_and_goal_y = ((is_coll_btw_rob_and_goal_y >= 0) & (is_coll_btw_rob_and_goal_y <= 1))
 
         mask_human_dist_to_coll = (human_dist_to_coll <= safe_dist)
@@ -167,14 +167,14 @@ class CrowdSimPred(CrowdSimVarNum):
         mask_rob_human_dist = (np.linalg.norm(human_pos[:,0:2] - rob_pos, axis=1)<= safe_dist)
 
         min_time = np.sum((-relative_pos) * relative_vel, axis=1)/np.sum(relative_vel**2, axis=1)
-        mask_min_time = (min_time > 0) & (min_time < 1)
+        mask_min_time = (min_time > 0) & (min_time < 2)
 
-        #closest_pos = relative_pos + relative_vel * min_time[:, None]
-        #closest_dist = np.linalg.norm(closest_pos, axis=1)
-        #mask_collision = closest_dist <= safe_dist
-        #collision_mask = mask_min_time & mask_collision
-        #return np.any(collision_mask)
-        return np.any(mask_min_time)
+        closest_pos = relative_pos + relative_vel * min_time[:, None]
+        closest_dist = np.linalg.norm(closest_pos, axis=1)
+        mask_collision = closest_dist <= safe_dist
+        collision_mask = mask_min_time & mask_collision
+        return np.any(collision_mask)
+        #return np.any(mask_min_time)
 
     def step(self, action, update=True):
         """
@@ -192,9 +192,11 @@ class CrowdSimPred(CrowdSimVarNum):
                                            np.tile(self.last_human_states[:, -1], self.predict_steps+1).reshape((-1, 1))),
                                           axis=1)
             # get orca action
-            if self.check_intrusion_cpa():
+            if self.check_intrusion_path_intersection():
                 action = ActionXY(0,0)
                 self.robot.visible = True
+                robot_pos = ((self.robot.get_position()),(self.robot.get_velocity()))
+                logging.info(f"Instrusion: robot_pos: {robot_pos[0]}")
             else:
                 self.robot.visible = False
                 action = self.robot.act(human_states.tolist())
