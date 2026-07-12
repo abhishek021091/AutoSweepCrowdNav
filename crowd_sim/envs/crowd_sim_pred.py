@@ -111,8 +111,7 @@ class CrowdSimPred(CrowdSimVarNum):
         projection = longitudinal_distance[:,None] * robot_goal_unit
         lateral_distance = np.linalg.norm(relative_pos - projection, axis=1)
         logitudinal_distance_mask = ((longitudinal_distance>0) & (longitudinal_distance<rob_goal_dist))
-        if np.any(logitudinal_distance_mask) and np.any(longitudinal_distance>0):
-            if np.any(lateral_distance < safe_dist):
+        if np.any(logitudinal_distance_mask) and np.any(longitudinal_distance>0) and np.any(lateral_distance < safe_dist):
                 return True
             
     def check_intrusion_path_intersection(self):
