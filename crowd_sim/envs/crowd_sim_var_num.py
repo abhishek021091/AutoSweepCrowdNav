@@ -680,7 +680,7 @@ class CrowdSimVarNum(CrowdSim):
             episode_info = Timeout()
         elif collision:
             reward = self.collision_penalty
-            done = True
+            done = False
             episode_info = Collision()
         elif reaching_goal:
             if self.robot_sweep:

@@ -151,7 +151,13 @@ class CrowdSimPredRealGST(CrowdSimPred):
             x,y = self.swept_points[-1]
             patch = plt.Circle((x, y),radius=self.robot.radius,facecolor='skyblue',edgecolor='none',alpha=0.35,zorder=0)
             ax.add_patch(patch)
-
+        
+        relative_pos = self.last_human_states[:,0:2] - np.array(self.robot.get_position()) 
+        collision_idx = np.linalg.norm(relative_pos, axis=-1) < self.robot.radius + self.config.humans.radius
+        if np.any(collision_idx):
+            x,y = self.swept_point[-1]
+            patch = plt.Cirlcle((x,y),radius=self.robot.radius,facecolor='red',edge='none',alpha=1,zorder=0)
+            ax.add_patch(patch)
 
         robot=plt.Circle((robotX,robotY), self.robot.radius, fill=True, color=robot_color)
         ax.add_artist(robot)

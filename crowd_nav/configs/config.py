@@ -135,6 +135,7 @@ class Config(object):
     # holonomic or unicycle
     action_space.kinematics = "holonomic"
 
+    check_intrusion_method = 'voting'
     # config for ORCA
     orca = BaseConfig()
     orca.neighbor_dist = 10

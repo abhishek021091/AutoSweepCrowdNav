@@ -78,7 +78,7 @@ class CrowdSim(gym.Env):
         self.sweep_tail = None
         self.swept_points = None
         self.robot_visible = None
-
+        self.check_intrusion_method = None
         #seed
         self.thisSeed=None # the seed will be set when the env is created
 
@@ -138,6 +138,7 @@ class CrowdSim(gym.Env):
         self.robot_sweep_margin = config.robot.sweep_margin
         self.robot_sweep_lane_step = config.robot.sweep_lane_step
         self.robot_visible = config.robot.visible
+        self.check_intrusion_method = config.check_intrusion_method
         self.prev_step = 0
         self.step_penalty = self.config.reward.step_penalty
         self.sweep_tail = self.config.robot.sweep_tail
