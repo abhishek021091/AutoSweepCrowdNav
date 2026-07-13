@@ -15,7 +15,7 @@ class Config(object):
 
     # general configs for OpenAI gym env
     env = BaseConfig()
-    env.time_limit = 600
+    env.time_limit = 1200
     env.time_step = 0.25
     env.val_size = 100
     env.test_size = 500
@@ -129,13 +129,13 @@ class Config(object):
     robot.FOV = 2
     # radius of perception range
     robot.sensor_range = 5
-    robot.robot_human_safety_margin = 0.5
+    robot.robot_human_safety_margin = 1
     # action space of the robot
     action_space = BaseConfig()
     # holonomic or unicycle
     action_space.kinematics = "holonomic"
 
-    check_intrusion_method = 'voting'
+    check_intrusion_method = 'SAT'      #'SAT','path_intersection', 'cpa', 'voting', 'None'
     # config for ORCA
     orca = BaseConfig()
     orca.neighbor_dist = 10

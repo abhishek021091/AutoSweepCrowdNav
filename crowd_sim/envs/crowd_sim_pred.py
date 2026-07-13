@@ -210,6 +210,8 @@ class CrowdSimPred(CrowdSimVarNum):
                 check_intrusion = self.check_intrusion_cpa()
             elif self.config.check_intrusion_method == 'voting':
                 check_intrusion = self.check_intrusion_voting()
+            elif self.config.check_intrusion_method == 'None':
+                check_intrusion = False
 
             if check_intrusion:
                 action = ActionXY(0,0)
@@ -267,6 +269,7 @@ class CrowdSimPred(CrowdSimVarNum):
 
         self.global_time += self.time_step # max episode length=time_limit/time_step
         self.step_counter = self.step_counter+1
+        
 
         info={'info':episode_info}
 
@@ -319,7 +322,6 @@ class CrowdSimPred(CrowdSimVarNum):
                 if norm((human.gx - human.px, human.gy - human.py)) < human.radius:
                     self.humans[i] = self.generate_ellipse_crossing_human()
                     self.humans[i].id = i
-
         return ob, reward, done, info
 
 
@@ -384,10 +386,20 @@ class CrowdSimPred(CrowdSimVarNum):
 
         
         if self.sweep_tail:
-            self.swept_points.append((robotX,robotY))
-            x,y = self.swept_points[-1]
-            patch = plt.Circle((x, y),radius=self.robot.radius,facecolor='skyblue',edgecolor='none',alpha=0.35,zorder=0)
+            patch = plt.Circle((robotX, robotY),radius=self.robot.radius,facecolor='skyblue',edgecolor='none',alpha=0.35,zorder=0)
             ax.add_patch(patch)
+
+        robot_pos = np.array([robotX,robotY])
+        human_pos = np.array([human.get_position() for human in self.humans])
+        human_radius = np.array([human.radius for human in self.humans])
+        safe_dist = (self.robot.radius + human_radius + self.config.robot.robot_human_safety_margin)
+        dist = np.linalg.norm(human_pos - robot_pos, axis=1)
+        collision_mask = dist <= safe_dist
+        if np.any(collision_mask):
+            idx = np.argmax(collision_mask)
+            collision_point = (robot_pos + human_pos[idx]) / 2
+            ax.text(collision_point[0],collision_point[1] + 0.2,"💥",fontsize=14,ha='center')
+
 
 
         robot=plt.Circle((robotX,robotY), self.robot.radius, fill=True, color=robot_color)

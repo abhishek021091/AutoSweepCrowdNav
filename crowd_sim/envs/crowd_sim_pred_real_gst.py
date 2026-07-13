@@ -147,17 +147,27 @@ class CrowdSimPredRealGST(CrowdSimPred):
 
         
         if self.sweep_tail:
-            self.swept_points.append((robotX,robotY))
-            x,y = self.swept_points[-1]
-            patch = plt.Circle((x, y),radius=self.robot.radius,facecolor='skyblue',edgecolor='none',alpha=0.35,zorder=0)
+            patch = plt.Circle((robotX, robotY),radius=self.robot.radius,facecolor='skyblue',edgecolor='none',alpha=0.35,zorder=0)
             ax.add_patch(patch)
-        
-        relative_pos = self.last_human_states[:,0:2] - np.array(self.robot.get_position()) 
-        collision_idx = np.linalg.norm(relative_pos, axis=-1) < self.robot.radius + self.config.humans.radius
-        if np.any(collision_idx):
-            x,y = self.swept_point[-1]
-            patch = plt.Cirlcle((x,y),radius=self.robot.radius,facecolor='red',edge='none',alpha=1,zorder=0)
-            ax.add_patch(patch)
+
+
+        robot_pos = np.array([robotX,robotY])
+        human_pos = np.array([human.get_position() for human in self.humans])
+        human_radius = np.array([human.radius for human in self.humans])
+        safe_dist = (self.robot.radius + human_radius + self.config.robot.robot_human_safety_margin)
+        dist = np.linalg.norm(human_pos - robot_pos, axis=1)
+        collision_mask = dist <= safe_dist
+        if np.any(collision_mask):
+            idx = np.argmax(collision_mask)
+            collision_point = (robot_pos + human_pos[idx]) / 2
+
+            angles = np.linspace(0, 2*np.pi, 20, endpoint=False)
+            r = np.array([1.2,0.5,1.4,0.4,1.0,0.6,1.5,0.5,1.1,0.4,1.3,0.6,1.6,0.4,1.0,0.5,1.2,0.4,1.5,0.5])
+            x = collision_point[0] + 0.15*r*np.cos(angles)
+            y = collision_point[1] + 0.15*r*np.sin(angles)
+            ax.fill(x,y,color='orange',edgecolor='red',linewidth=0.1,zorder=100)
+            
+
 
         robot=plt.Circle((robotX,robotY), self.robot.radius, fill=True, color=robot_color)
         ax.add_artist(robot)

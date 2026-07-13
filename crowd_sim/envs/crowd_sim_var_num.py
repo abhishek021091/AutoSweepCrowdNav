@@ -391,11 +391,18 @@ class CrowdSimVarNum(CrowdSim):
                     else:
                         gy += self.robot_sweep_lane_step
                     self.robot.sweep_dir = 1
+            if gy > self.arena_height - self.robot_sweep_margin:
+                gy = self.arena_height - self.robot_sweep_margin
+                self.robot.sweep_finished = True
+
+            elif gy < -self.arena_height + self.robot_sweep_margin:
+                gy = -self.arena_height + self.robot_sweep_margin
+                self.robot.sweep_finished = True
         else: # y-axes sweep
             gx = self.robot.gx
             gy = self.robot.gy + self.robot.sweep_dir * self.robot_sweep_step
             if gy > self.arena_height - self.robot_sweep_margin:
-                if self.robot.gx != self.arena_height - self.robot_sweep_margin:
+                if self.robot.gy != self.arena_height - self.robot_sweep_margin:
                     gy = self.arena_height - self.robot_sweep_margin
                 else:
                     gy = self.robot.gy
@@ -405,7 +412,7 @@ class CrowdSimVarNum(CrowdSim):
                         gx += self.robot_sweep_lane_step
                     self.robot.sweep_dir = -1
             elif gy < -self.arena_height + self.robot_sweep_margin:
-                if self.robot.py != -self.arena_height + self.robot_sweep_margin:
+                if self.robot.gy != -self.arena_height + self.robot_sweep_margin:
                     gy = -self.arena_height + self.robot_sweep_margin
                 else:
                     gy = self.robot.gy
@@ -414,6 +421,13 @@ class CrowdSimVarNum(CrowdSim):
                     else:
                         gx += self.robot_sweep_lane_step
                     self.robot.sweep_dir = 1
+            if gx > self.arena_width - self.robot_sweep_margin:
+                gx = self.arena_width - self.robot_sweep_margin
+                self.robot.sweep_finished = True
+
+            elif gx < -self.arena_width + self.robot_sweep_margin:
+                gx = -self.arena_width + self.robot_sweep_margin
+                self.robot.sweep_finished = True
         self.robot.gx = gx
         self.robot.gy = gy
 
